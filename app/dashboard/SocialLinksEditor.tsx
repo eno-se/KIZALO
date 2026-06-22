@@ -11,7 +11,7 @@ const PLATFORMS = [
   { value: "youtube", label: "YouTube" },
   { value: "twitch", label: "Twitch" },
   { value: "showroom", label: "SHOWROOM" },
-  { value: "seventeen", label: "17LIVE" },
+  { value: "17live", label: "17LIVE" },
   { value: "pococha", label: "Pococha" },
   { value: "note", label: "note" },
   { value: "threads", label: "Threads" },
@@ -83,7 +83,7 @@ export default function SocialLinksEditor({ socialLinks }: { socialLinks: Social
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://..."
-            className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white/80 text-xs focus:outline-none focus:ring-2 focus:ring-violet-300"
+            className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white/80 text-xs focus:outline-none focus:ring-2 focus:ring-pink-200"
           />
         </div>
         <button

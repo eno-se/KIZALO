@@ -35,7 +35,7 @@ export default function CreatorSetupForm({ defaultName }: { defaultName: string 
             value={slug}
             onChange={(e) => setSlug(e.target.value.toLowerCase())}
             placeholder="your-id"
-            className="flex-1 px-3 py-2 rounded-xl border border-slate-200 bg-white/80 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+            className="flex-1 px-3 py-2 rounded-xl border border-slate-200 bg-white/80 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200"
             required
           />
         </div>
@@ -48,7 +48,7 @@ export default function CreatorSetupForm({ defaultName }: { defaultName: string 
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="あなたの名前"
-          className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white/80 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+          className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white/80 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200"
           required
         />
       </div>

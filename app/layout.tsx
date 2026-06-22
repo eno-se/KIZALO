@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Header from "./components/Header";
+import BottomNav from "./components/BottomNav";
+import LiquidGlassFilter from "./components/LiquidGlassFilter";
+import NextTopLoader from "nextjs-toploader";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,17 +23,33 @@ export const metadata: Metadata = {
   description: "推しのプロフィールに自分の名前を刻もう。毎日1回、応援の証を残せる。",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
+  let mySlug: string | null = null;
+  if (session?.user.id) {
+    const creator = await db.creatorProfile.findUnique({
+      where: { userId: session.user.id },
+      select: { slug: true },
+    });
+    mySlug = creator?.slug ?? null;
+  }
+
   return (
     <html
       lang="ja"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <NextTopLoader color="#B98AF5" shadow="0 0 10px #F58BCB,0 0 5px #7DB7FF" height={3} showSpinner={false} />
+        <LiquidGlassFilter />
+        <Header />
+        <div className="pt-14 pb-16">{children}</div>
+        <BottomNav mySlug={mySlug} />
+      </body>
     </html>
   );
 }

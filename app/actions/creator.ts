@@ -3,6 +3,46 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { r2, R2_BUCKET, R2_PUBLIC_URL } from "@/lib/r2";
+import { getJstDateString } from "@/lib/jst";
+
+export async function updateSlug(newSlug: string) {
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+
+  const slugRegex = /^[a-zA-Z0-9_-]{3,30}$/;
+  if (!slugRegex.test(newSlug)) {
+    return { error: "IDは英数字・アンダースコア・ハイフン（3〜30文字）で入力してください" };
+  }
+
+  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  if (!profile) return { error: "プロフィールが見つかりません" };
+
+  // 当日JST内に変更済みかチェック
+  if (profile.slugChangedAt) {
+    const changedDate = new Date(profile.slugChangedAt.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    if (changedDate === getJstDateString()) {
+      return { error: "IDの変更は1日1回までです。明日以降にお試しください。" };
+    }
+  }
+
+  if (newSlug === profile.slug) return { success: true };
+
+  const existing = await db.creatorProfile.findUnique({ where: { slug: newSlug } });
+  if (existing) return { error: "このIDはすでに使われています" };
+
+  const oldSlug = profile.slug;
+  await db.creatorProfile.update({
+    where: { id: profile.id },
+    data: { slug: newSlug, slugChangedAt: new Date() },
+  });
+
+  revalidatePath("/edit");
+  revalidatePath(`/${oldSlug}`);
+  revalidatePath(`/${newSlug}`);
+  return { success: true, newSlug };
+}
 
 export async function createCreatorProfile(slug: string, displayName: string) {
   const session = await auth();
@@ -27,6 +67,9 @@ export async function createCreatorProfile(slug: string, displayName: string) {
 export async function updateCreatorProfile(data: {
   displayName: string;
   bio: string;
+  bioLink?: string;
+  bioLinkLabel?: string;
+  iconUrl?: string | null;
 }) {
   const session = await auth();
   if (!session) throw new Error("Unauthorized");
@@ -34,12 +77,30 @@ export async function updateCreatorProfile(data: {
   const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
   if (!profile) throw new Error("Profile not found");
 
+  // 旧アイコンをR2から削除
+  if (
+    data.iconUrl !== undefined &&
+    data.iconUrl !== profile.iconUrl &&
+    profile.iconUrl?.startsWith(R2_PUBLIC_URL)
+  ) {
+    const oldKey = profile.iconUrl.replace(`${R2_PUBLIC_URL}/`, "");
+    try {
+      await r2.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: oldKey }));
+    } catch {}
+  }
+
   await db.creatorProfile.update({
     where: { id: profile.id },
-    data: { displayName: data.displayName, bio: data.bio },
+    data: {
+      displayName: data.displayName,
+      bio: data.bio.replace(/\n{2,}/g, "\n"),
+      bioLink: data.bioLink ?? "",
+      bioLinkLabel: data.bioLinkLabel ?? "",
+      ...(data.iconUrl !== undefined && { iconUrl: data.iconUrl }),
+    },
   });
 
-  revalidatePath("/dashboard");
+  revalidatePath("/edit");
   revalidatePath(`/${profile.slug}`);
 }
 
@@ -58,6 +119,7 @@ export async function upsertSocialLink(platform: string, url: string) {
     await db.socialLink.update({ where: { id: existing.id }, data: { url } });
   } else {
     const count = await db.socialLink.count({ where: { creatorId: profile.id } });
+    if (count >= 4) throw new Error("SNSリンクは4つまで登録できます");
     await db.socialLink.create({ data: { creatorId: profile.id, platform, url, order: count } });
   }
 
@@ -77,31 +139,33 @@ export async function deleteSocialLink(id: string) {
   revalidatePath("/dashboard");
 }
 
-export async function blockFan(fanId: string) {
+export async function updateButtonVisibility(data: { showKizaruButton: boolean }) {
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  if (!profile) throw new Error("Profile not found");
+  await db.creatorProfile.update({ where: { id: profile.id }, data });
+  revalidatePath("/edit");
+  revalidatePath(`/${profile.slug}`);
+}
+
+export async function updateCardVisibility(data: {
+  showFastestCard: boolean;
+  showRandomCard: boolean;
+  cardOrder: string;
+}) {
   const session = await auth();
   if (!session) throw new Error("Unauthorized");
 
   const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
   if (!profile) throw new Error("Profile not found");
 
-  await db.blockedFan.upsert({
-    where: { creatorId_fanId: { creatorId: profile.id, fanId } },
-    create: { creatorId: profile.id, fanId },
-    update: {},
+  await db.creatorProfile.update({
+    where: { id: profile.id },
+    data,
   });
 
+  revalidatePath("/edit");
   revalidatePath(`/${profile.slug}`);
 }
 
-export async function unblockFan(fanId: string) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
-
-  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
-  if (!profile) throw new Error("Profile not found");
-
-  await db.blockedFan.deleteMany({ where: { creatorId: profile.id, fanId } });
-
-  revalidatePath(`/${profile.slug}`);
-  revalidatePath("/dashboard");
-}

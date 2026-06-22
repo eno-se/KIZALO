@@ -20,8 +20,6 @@ model User {
   creatorProfile CreatorProfile?
   kizaris        Kizari[]
   follows        FanFollow[]
-  blockedBy      BlockedFan[]
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -32,14 +30,21 @@ model CreatorProfile {
   user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   slug        String  @unique
   displayName String
-  bio         String?
-  iconUrl     String?
-  isPublic    Boolean @default(true)
+  bio          String?
+  bioLink      String?
+  bioLinkLabel String?
+  iconUrl      String?
+  isPublic         Boolean @default(true)
+  slugChangedAt    DateTime?
+  showFastestCard  Boolean @default(true)
+  showRandomCard   Boolean @default(true)
+  showKizaruButton Boolean @default(true)
+  cardOrder        String  @default("fastest,random")
 
   socialLinks SocialLink[]
   kizaris     Kizari[]
   fans        FanFollow[]
-  blockedFans BlockedFan[]
+  linkClicks  LinkClick[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -61,9 +66,10 @@ model FanFollow {
   fan          User           @relation(fields: [fanId], references: [id], onDelete: Cascade)
   creatorId    String
   creator      CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  streakDays   Int            @default(0)
-  totalKizari  Int            @default(0)
-  lastKizariAt DateTime?
+  streakDays    Int            @default(0)
+  maxStreakDays Int            @default(0)
+  totalKizari   Int            @default(0)
+  lastKizariAt  DateTime?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
@@ -82,15 +88,17 @@ model Kizari {
   @@unique([fanId, creatorId, date])
 }
 
-model BlockedFan {
+model LinkClick {
   id        String         @id @default(cuid())
   creatorId String
   creator   CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  fanId     String
-  fan       User           @relation(fields: [fanId], references: [id], onDelete: Cascade)
+  linkId    String
+  label     String
+  platform  String
+  date      String
   createdAt DateTime       @default(now())
 
-  @@unique([creatorId, fanId])
+  @@index([creatorId, date])
 }
 
 // NextAuth

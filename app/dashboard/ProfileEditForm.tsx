@@ -28,7 +28,7 @@ export default function ProfileEditForm({ displayName, bio }: Props) {
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white/80 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+          className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white/80 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200"
           required
         />
       </div>
@@ -39,7 +39,7 @@ export default function ProfileEditForm({ displayName, bio }: Props) {
           onChange={(e) => setBioText(e.target.value)}
           rows={3}
           maxLength={200}
-          className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white/80 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-violet-300"
+          className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white/80 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-pink-200"
         />
       </div>
       <button

@@ -28,7 +28,7 @@ export default function SetupForm({ defaultName }: { defaultName: string }) {
           onChange={(e) => setName(e.target.value)}
           placeholder="例：Taiga"
           maxLength={30}
-          className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200"
           required
         />
         <p className="text-xs text-slate-400 mt-1">推しのページに刻まれる名前です</p>

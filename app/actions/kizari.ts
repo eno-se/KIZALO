@@ -21,11 +21,6 @@ export async function kizaru(creatorId: string, slug: string) {
     where: { fanId_creatorId: { fanId: userId, creatorId } },
   });
 
-  const followCount = await db.fanFollow.count({ where: { fanId: userId } });
-  if (!follow && followCount >= 3) {
-    return { error: "無料プランでは最大3人まで推し登録できます" };
-  }
-
   let newStreak = 1;
   if (follow?.lastKizariAt) {
     const yesterday = new Date();
@@ -36,12 +31,14 @@ export async function kizaru(creatorId: string, slug: string) {
     }
   }
 
+  const newMaxStreak = Math.max(newStreak, follow?.maxStreakDays ?? 0);
+
   await db.$transaction([
     db.kizari.create({ data: { fanId: userId, creatorId, date: today } }),
     db.fanFollow.upsert({
       where: { fanId_creatorId: { fanId: userId, creatorId } },
-      create: { fanId: userId, creatorId, streakDays: 1, totalKizari: 1, lastKizariAt: new Date() },
-      update: { streakDays: newStreak, totalKizari: { increment: 1 }, lastKizariAt: new Date() },
+      create: { fanId: userId, creatorId, streakDays: 1, maxStreakDays: 1, totalKizari: 1, lastKizariAt: new Date() },
+      update: { streakDays: newStreak, maxStreakDays: newMaxStreak, totalKizari: { increment: 1 }, lastKizariAt: new Date() },
     }),
   ]);
 
