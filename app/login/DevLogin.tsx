@@ -1,12 +1,14 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 type User = { id: string; displayName: string | null; name: string | null; email: string | null };
 
 export default function DevLogin({ users }: { users: User[] }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/";
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const login = async (userId: string) => {
@@ -16,7 +18,7 @@ export default function DevLogin({ users }: { users: User[] }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId }),
     });
-    router.push("/");
+    router.push(callbackUrl);
     router.refresh();
   };
 

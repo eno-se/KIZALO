@@ -33,14 +33,18 @@ export async function kizaru(creatorId: string, slug: string) {
 
   const newMaxStreak = Math.max(newStreak, follow?.maxStreakDays ?? 0);
 
-  await db.$transaction([
-    db.kizari.create({ data: { fanId: userId, creatorId, date: today } }),
-    db.fanFollow.upsert({
-      where: { fanId_creatorId: { fanId: userId, creatorId } },
-      create: { fanId: userId, creatorId, streakDays: 1, maxStreakDays: 1, totalKizari: 1, lastKizariAt: new Date() },
-      update: { streakDays: newStreak, maxStreakDays: newMaxStreak, totalKizari: { increment: 1 }, lastKizariAt: new Date() },
-    }),
-  ]);
+  try {
+    await db.$transaction([
+      db.kizari.create({ data: { fanId: userId, creatorId, date: today } }),
+      db.fanFollow.upsert({
+        where: { fanId_creatorId: { fanId: userId, creatorId } },
+        create: { fanId: userId, creatorId, streakDays: 1, maxStreakDays: 1, totalKizari: 1, lastKizariAt: new Date() },
+        update: { streakDays: newStreak, maxStreakDays: newMaxStreak, totalKizari: { increment: 1 }, lastKizariAt: new Date() },
+      }),
+    ]);
+  } catch {
+    return { error: "今日はすでにキザり済みです" };
+  }
 
   revalidatePath(`/${slug}`);
   revalidatePath("/me");

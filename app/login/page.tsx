@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import Image from "next/image";
+import { Suspense } from "react";
 import LoginButton from "./LoginButton";
 import DevLogin from "./DevLogin";
 
@@ -24,11 +25,21 @@ export default async function LoginPage() {
           <Image src="/logo.png" alt="KIZALO" width={140} height={42} className="object-contain" priority />
         </div>
         <p className="text-sm text-slate-400 mb-8">推しのプロフィールに、名前を刻む。</p>
-        <LoginButton />
+        <Suspense>
+          <LoginButton />
+        </Suspense>
         <p className="mt-6 text-xs text-slate-400">
-          ログインすることで利用規約に同意したものとみなします
+          ログインすることで
+          <a href="/terms" className="underline underline-offset-2 hover:text-slate-600">利用規約</a>
+          ・
+          <a href="/privacy" className="underline underline-offset-2 hover:text-slate-600">プライバシーポリシー</a>
+          に同意したものとみなします
         </p>
-        {process.env.NODE_ENV === "development" && <DevLogin users={devUsers} />}
+        {process.env.NODE_ENV === "development" && (
+          <Suspense>
+            <DevLogin users={devUsers} />
+          </Suspense>
+        )}
       </div>
     </div>
   );

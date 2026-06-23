@@ -5,6 +5,7 @@ import Image from "next/image";
 import Cropper from "react-easy-crop";
 import type { Area } from "react-easy-crop";
 import { updateCreatorProfile, updateSlug } from "@/app/actions/creator";
+import { validateDisplayName } from "@/lib/sns-validation";
 
 type Props = {
   displayName: string;
@@ -75,6 +76,7 @@ export default function EditProfileForm({ displayName, bio, bioLink, bioLinkLabe
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -124,7 +126,9 @@ export default function EditProfileForm({ displayName, bio, bioLink, bioLinkLabe
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    const nameErr = validateDisplayName(name);
+    if (nameErr) { setNameError(nameErr); return; }
+    setNameError(null);
     startTransition(async () => {
       await updateCreatorProfile({
         displayName: name.trim(),
@@ -250,6 +254,15 @@ export default function EditProfileForm({ displayName, bio, bioLink, bioLinkLabe
             </div>
           </button>
           <p className="text-xs text-slate-400">タップして画像を変更</p>
+          {currentIconUrl && (
+            <button
+              type="button"
+              onClick={() => setCurrentIconUrl(null)}
+              className="text-xs text-red-400 hover:text-red-500 transition-colors"
+            >
+              画像を削除する
+            </button>
+          )}
           <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleFileChange} />
         </div>
 
@@ -264,6 +277,7 @@ export default function EditProfileForm({ displayName, bio, bioLink, bioLinkLabe
             required
             className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white/80 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200"
           />
+          {nameError && <p className="text-xs text-red-500 mt-1">{nameError}</p>}
         </div>
 
         {/* ID */}

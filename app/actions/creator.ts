@@ -74,6 +74,10 @@ export async function updateCreatorProfile(data: {
   const session = await auth();
   if (!session) throw new Error("Unauthorized");
 
+  const { validateDisplayName } = await import("@/lib/sns-validation");
+  const nameErr = validateDisplayName(data.displayName);
+  if (nameErr) throw new Error(nameErr);
+
   const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
   if (!profile) throw new Error("Profile not found");
 
@@ -108,6 +112,10 @@ export async function upsertSocialLink(platform: string, url: string) {
   const session = await auth();
   if (!session) throw new Error("Unauthorized");
 
+  const { validateSnsUrl } = await import("@/lib/sns-validation");
+  const validationError = validateSnsUrl(platform, url);
+  if (validationError) throw new Error(validationError);
+
   const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
   if (!profile) throw new Error("Profile not found");
 
@@ -125,6 +133,23 @@ export async function upsertSocialLink(platform: string, url: string) {
 
   revalidatePath("/dashboard");
   revalidatePath(`/${profile.slug}`);
+}
+
+export async function reorderSocialLinks(orderedIds: string[]) {
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+
+  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  if (!profile) throw new Error("Profile not found");
+
+  await db.$transaction(
+    orderedIds.map((id, index) =>
+      db.socialLink.updateMany({ where: { id, creatorId: profile.id }, data: { order: index } })
+    )
+  );
+
+  revalidatePath(`/${profile.slug}`);
+  revalidatePath("/edit");
 }
 
 export async function deleteSocialLink(id: string) {

@@ -24,7 +24,7 @@ export default function KizaruButton({ creatorId, slug, alreadyKizared, isLogged
     return (
       <div className="flex justify-center">
         <a
-          href="/login"
+          href={`/login?callbackUrl=/${slug}`}
           className="glass-btn-primary px-10 py-3.5 rounded-full font-bold text-center text-sm flex items-center justify-center gap-2"
         >
           <Image src="/kizaru-icon.png" alt="" width={18} height={18} className="object-contain" />名前を刻る

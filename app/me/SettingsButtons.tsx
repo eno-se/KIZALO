@@ -20,6 +20,28 @@ export default function SettingsButtons() {
 
   return (
     <div className="glass-card rounded-2xl overflow-hidden">
+      {/* 利用規約 */}
+      <a
+        href="/terms"
+        className="flex items-center justify-between px-5 py-4 border-b border-slate-100 hover:bg-slate-50/60 transition-colors"
+      >
+        <span className="text-sm text-slate-700">利用規約</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 18l6-6-6-6" />
+        </svg>
+      </a>
+
+      {/* プライバシーポリシー */}
+      <a
+        href="/privacy"
+        className="flex items-center justify-between px-5 py-4 border-b border-slate-100 hover:bg-slate-50/60 transition-colors"
+      >
+        <span className="text-sm text-slate-700">プライバシーポリシー</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 18l6-6-6-6" />
+        </svg>
+      </a>
+
       {/* お問い合わせ */}
       <a
         href={CONTACT_URL}
