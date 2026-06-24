@@ -6,7 +6,39 @@ import KizaruButton from "./KizaruButton";
 import TrackedLink from "./TrackedLink";
 import BioText from "@/app/components/BioText";
 import FanNameMarquee from "@/app/components/FanNameMarquee";
+import ShareButton from "./ShareButton";
 import Image from "next/image";
+import type { Metadata } from "next";
+
+export async function generateMetadata(
+  { params }: { params: Promise<{ slug: string }> }
+): Promise<Metadata> {
+  const { slug } = await params;
+  const creator = await db.creatorProfile.findUnique({
+    where: { slug },
+    select: { displayName: true, bio: true },
+  });
+  if (!creator) return {};
+  const title = `${creator.displayName} | KIZALO`;
+  const description = creator.bio
+    ? creator.bio.slice(0, 80)
+    : `${creator.displayName}のKIZALOページ。毎日1回、応援の証を刻もう。`;
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `/${slug}`,
+      type: "profile",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+  };
+}
 
 const PLATFORM_LABEL: Record<string, string> = {
   x: "X", instagram: "Instagram", tiktok: "TikTok", youtube: "YouTube",
@@ -96,14 +128,15 @@ export default async function CreatorPage({ params }: { params: Promise<{ slug: 
     <div className="min-h-screen px-4 py-8 max-w-lg mx-auto pb-28">
       {/* プロフィール */}
       <div className="px-2 mb-4">
-        {/* 管理ボタン（右上） */}
-        {isOwner && (
-          <div className="flex justify-end mb-2">
-            <a href="/edit" className="text-xs glass-btn-secondary px-3 py-1.5 rounded-lg">
+        {/* 右上ボタン */}
+        <div className="flex justify-end gap-2 mb-2">
+          <ShareButton slug={slug} />
+          {isOwner && (
+            <a href="/edit" className="text-xs glass-btn-secondary px-3 py-1.5 rounded-lg flex items-center">
               編集
             </a>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* トプ画・名前・ID（センター） */}
         <div className="flex flex-col items-center text-center mb-5">
@@ -205,8 +238,28 @@ export default async function CreatorPage({ params }: { params: Promise<{ slug: 
 
       {/* 私の刻み実績 */}
       {session && !isOwner && (
-        <div className="relative rounded-2xl pt-3 pb-4 px-4 mt-4" style={{ background: "linear-gradient(135deg, rgba(245,139,203,0.75) 0%, rgba(185,138,245,0.80) 50%, rgba(125,183,255,0.72) 100%)", border: "1px solid rgba(255,255,255,0.40)", boxShadow: "0 4px 24px rgba(185,138,245,0.35)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}>
+        <div className="relative rounded-2xl pt-3 pb-4 px-4 mt-4 overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(245,139,203,0.75) 0%, rgba(185,138,245,0.80) 50%, rgba(125,183,255,0.72) 100%)", border: "1px solid rgba(255,255,255,0.40)", boxShadow: "0 4px 24px rgba(185,138,245,0.35)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}>
           <Image src="/logo.png" alt="KIZALO" width={56} height={17} className="absolute top-3 left-4 object-contain" style={{ filter: "brightness(0) invert(1)" }} />
+          {/* 右上リボン（カードのoverflow-hiddenでクリップ） */}
+          <div
+            className="absolute font-bold text-white text-center"
+            style={{
+              width: 110,
+              padding: "6px 0",
+              fontSize: "0.55rem",
+              letterSpacing: "0.04em",
+              background: alreadyKizared
+                ? "linear-gradient(135deg, #34d399, #059669)"
+                : "rgba(255,255,255,0.35)",
+              top: 18,
+              right: -26,
+              transform: "rotate(45deg)",
+              boxShadow: "0 2px 5px rgba(0,0,0,0.18)",
+              pointerEvents: "none",
+            }}
+          >
+            {alreadyKizared ? "本日、刻み済！" : "未刻み"}
+          </div>
           <h2 className="text-xs font-bold text-white text-center mb-4 flex items-center justify-center gap-1.5">
             <span className="sparkle" style={{ background: "white" }} />刻み実績<span className="sparkle" style={{ background: "white" }} />
           </h2>

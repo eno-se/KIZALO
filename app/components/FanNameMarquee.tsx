@@ -14,7 +14,7 @@ export default function FanNameMarquee({ name, className }: { name: string; clas
   return (
     <div ref={containerRef} className="overflow-hidden flex-1 min-w-0">
       <span className={`whitespace-nowrap ${overflow ? "fan-name-marquee" : ""} ${className ?? ""}`}>
-        {overflow ? `${name}　　${name}` : name}
+        {overflow ? `${name}　　　${name}　　　` : name}
       </span>
     </div>
   );
