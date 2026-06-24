@@ -31,11 +31,13 @@ export async function generateMetadata(
       description,
       url: `/${slug}`,
       type: "profile",
+      images: [{ url: "/og-base.png", width: 1200, height: 630 }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
+      images: ["/og-base.png"],
     },
   };
 }
