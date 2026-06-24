@@ -19,7 +19,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { updateCardVisibility } from "@/app/actions/creator";
 
-type CardKey = "fastest" | "random";
+type CardKey = "fastest" | "random" | "most" | "streak";
 
 const CARD_META: Record<CardKey, { label: string; description: string }> = {
   fastest: {
@@ -30,11 +30,19 @@ const CARD_META: Record<CardKey, { label: string; description: string }> = {
     label: "今日○○に刻んだ人（ランダム）",
     description: "今日刻ってくれたファンを最大6名ランダムに紹介。すべてのファンに表示チャンスがあります",
   },
+  most: {
+    label: "最多で刻んだ人",
+    description: "累計刻り数が多いファンTop6。熱量の強い人が一目でわかります",
+  },
+  streak: {
+    label: "継続で刻んだ人",
+    description: "連続刻り日数が長いファンTop6。毎日来てくれる常連ファンが見えます",
+  },
 };
 
 function parseOrder(raw: string | undefined | null): CardKey[] {
-  const keys = (raw ?? "fastest,random").split(",").map((s) => s.trim()) as CardKey[];
-  const valid: CardKey[] = ["fastest", "random"];
+  const keys = (raw ?? "fastest,random,most,streak").split(",").map((s) => s.trim()) as CardKey[];
+  const valid: CardKey[] = ["fastest", "random", "most", "streak"];
   const filtered = keys.filter((k) => valid.includes(k));
   for (const k of valid) {
     if (!filtered.includes(k)) filtered.push(k);
@@ -45,6 +53,8 @@ function parseOrder(raw: string | undefined | null): CardKey[] {
 type Props = {
   showFastestCard: boolean;
   showRandomCard: boolean;
+  showMostCard: boolean;
+  showStreakCard: boolean;
   cardOrder?: string | null;
 };
 
@@ -106,11 +116,13 @@ function SortableCard({
   );
 }
 
-export default function CardVisibilityForm({ showFastestCard, showRandomCard, cardOrder }: Props) {
+export default function CardVisibilityForm({ showFastestCard, showRandomCard, showMostCard, showStreakCard, cardOrder }: Props) {
   const [order, setOrder] = useState<CardKey[]>(() => parseOrder(cardOrder));
   const [visibility, setVisibility] = useState<Record<CardKey, boolean>>({
     fastest: showFastestCard,
     random: showRandomCard,
+    most: showMostCard,
+    streak: showStreakCard,
   });
   const [dirty, setDirty] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -148,6 +160,8 @@ export default function CardVisibilityForm({ showFastestCard, showRandomCard, ca
       await updateCardVisibility({
         showFastestCard: visibility.fastest,
         showRandomCard: visibility.random,
+        showMostCard: visibility.most,
+        showStreakCard: visibility.streak,
         cardOrder: order.join(","),
       });
       setDirty(false);

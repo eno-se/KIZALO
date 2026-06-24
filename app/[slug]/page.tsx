@@ -22,10 +22,6 @@ export default async function CreatorPage({ params }: { params: Promise<{ slug: 
     where: { slug },
     include: {
       socialLinks: { orderBy: { order: "asc" } },
-      fans: {
-        include: { fan: true },
-        orderBy: { streakDays: "desc" },
-      },
       kizaris: {
         where: { date: getJstDateString() },
         include: { fan: { include: { creatorProfile: { select: { iconUrl: true } } } } },
@@ -78,6 +74,21 @@ export default async function CreatorPage({ params }: { params: Promise<{ slug: 
   const randomKizaris = [...visibleKizaris]
     .sort(() => Math.random() - 0.5)
     .slice(0, 6);
+
+  // 最多・継続カード用クエリ
+  const mostFans = await db.fanFollow.findMany({
+    where: { creatorId: creator.id },
+    include: { fan: { include: { creatorProfile: { select: { iconUrl: true } } } } },
+    orderBy: { totalKizari: "desc" },
+    take: 6,
+  });
+
+  const streakFans = await db.fanFollow.findMany({
+    where: { creatorId: creator.id, streakDays: { gt: 0 } },
+    include: { fan: { include: { creatorProfile: { select: { iconUrl: true } } } } },
+    orderBy: { streakDays: "desc" },
+    take: 6,
+  });
 
 
 
@@ -323,6 +334,78 @@ export default async function CreatorPage({ params }: { params: Promise<{ slug: 
                   <a href={`/${slug}/kizaris`} className="inline-flex items-center gap-1 text-xs brand-gradient-text font-bold">もっと見る<span className="more-icon" /></a>
                 </div>
               </>
+            )}
+          </div>
+        );
+
+        if (key === "most") return (
+          <div key="most" className="glass-card rounded-2xl pt-2 pb-4 px-5 mt-4">
+            <h2 className="text-xs font-bold brand-gradient-text text-center mb-3 flex items-center justify-center gap-1.5">
+              <span className="sparkle" />{creator.displayName}を最多で刻んだ人<span className="sparkle" />
+            </h2>
+            {!creator.showMostCard ? (
+              <div className="flex justify-center py-2">
+                <span style={{ display: "inline-block", width: 32, height: 32, maskImage: "url(/hidden-icon.png)", maskSize: "contain", maskRepeat: "no-repeat", maskPosition: "center", WebkitMaskImage: "url(/hidden-icon.png)", WebkitMaskSize: "contain", WebkitMaskRepeat: "no-repeat", WebkitMaskPosition: "center", background: "#94a3b8" }} />
+              </div>
+            ) : mostFans.length === 0 ? (
+              <p className="text-center text-slate-400 text-xs py-2">まだ誰も刻っていません</p>
+            ) : (
+              <div className="grid grid-cols-3 gap-2">
+                {mostFans.map((f) => {
+                  const name = f.fan.displayName ?? f.fan.name ?? "名無し";
+                  const iconUrl = f.fan.creatorProfile?.iconUrl;
+                  const isMe = f.fanId === session?.user.id;
+                  return (
+                    <div key={f.id} className="flex items-center gap-2">
+                      <div className="rounded-full overflow-hidden bg-pink-50 flex-shrink-0 flex items-center justify-center" style={{ width: 28, height: 28 }}>
+                        {iconUrl
+                          ? <Image src={iconUrl} alt={name} width={28} height={28} className="object-cover" style={{ width: 28, height: 28 }} unoptimized />
+                          : <span className="text-xs font-bold text-[#F58BCB]">{name[0]}</span>}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <FanNameMarquee name={name} className={`text-xs ${isMe ? "brand-gradient-text font-bold" : "text-slate-600"}`} />
+                        <p className="text-slate-400" style={{ fontSize: "0.6rem" }}>{f.totalKizari}回</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+
+        if (key === "streak") return (
+          <div key="streak" className="glass-card rounded-2xl pt-2 pb-4 px-5 mt-4">
+            <h2 className="text-xs font-bold brand-gradient-text text-center mb-3 flex items-center justify-center gap-1.5">
+              <span className="sparkle" />{creator.displayName}を継続で刻んだ人<span className="sparkle" />
+            </h2>
+            {!creator.showStreakCard ? (
+              <div className="flex justify-center py-2">
+                <span style={{ display: "inline-block", width: 32, height: 32, maskImage: "url(/hidden-icon.png)", maskSize: "contain", maskRepeat: "no-repeat", maskPosition: "center", WebkitMaskImage: "url(/hidden-icon.png)", WebkitMaskSize: "contain", WebkitMaskRepeat: "no-repeat", WebkitMaskPosition: "center", background: "#94a3b8" }} />
+              </div>
+            ) : streakFans.length === 0 ? (
+              <p className="text-center text-slate-400 text-xs py-2">まだ誰も刻っていません</p>
+            ) : (
+              <div className="grid grid-cols-3 gap-2">
+                {streakFans.map((f) => {
+                  const name = f.fan.displayName ?? f.fan.name ?? "名無し";
+                  const iconUrl = f.fan.creatorProfile?.iconUrl;
+                  const isMe = f.fanId === session?.user.id;
+                  return (
+                    <div key={f.id} className="flex items-center gap-2">
+                      <div className="rounded-full overflow-hidden bg-pink-50 flex-shrink-0 flex items-center justify-center" style={{ width: 28, height: 28 }}>
+                        {iconUrl
+                          ? <Image src={iconUrl} alt={name} width={28} height={28} className="object-cover" style={{ width: 28, height: 28 }} unoptimized />
+                          : <span className="text-xs font-bold text-[#F58BCB]">{name[0]}</span>}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <FanNameMarquee name={name} className={`text-xs ${isMe ? "brand-gradient-text font-bold" : "text-slate-600"}`} />
+                        <p className="text-slate-400" style={{ fontSize: "0.6rem" }}>🔥 {f.streakDays}日連続</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         );

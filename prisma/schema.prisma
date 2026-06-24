@@ -38,8 +38,10 @@ model CreatorProfile {
   slugChangedAt    DateTime?
   showFastestCard  Boolean @default(true)
   showRandomCard   Boolean @default(true)
+  showMostCard     Boolean @default(true)
+  showStreakCard   Boolean @default(true)
   showKizaruButton Boolean @default(true)
-  cardOrder        String  @default("fastest,random")
+  cardOrder        String  @default("fastest,random,most,streak")
 
   socialLinks SocialLink[]
   kizaris     Kizari[]

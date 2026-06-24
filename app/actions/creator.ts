@@ -177,6 +177,8 @@ export async function updateButtonVisibility(data: { showKizaruButton: boolean }
 export async function updateCardVisibility(data: {
   showFastestCard: boolean;
   showRandomCard: boolean;
+  showMostCard: boolean;
+  showStreakCard: boolean;
   cardOrder: string;
 }) {
   const session = await auth();

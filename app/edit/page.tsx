@@ -81,6 +81,8 @@ export default async function EditPage() {
             <CardVisibilityForm
               showFastestCard={profile.showFastestCard}
               showRandomCard={profile.showRandomCard}
+              showMostCard={profile.showMostCard}
+              showStreakCard={profile.showStreakCard}
               cardOrder={profile.cardOrder}
             />
           </div>
