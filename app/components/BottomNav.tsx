@@ -32,6 +32,17 @@ function DashboardIcon({ active }: { active: boolean }) {
   );
 }
 
+function GuideIcon({ active }: { active: boolean }) {
+  const stroke = active ? "url(#nav-grad)" : "#94a3b8";
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="8" r="1" fill={stroke} stroke="none" />
+      <path d="M11 12h1v4h1" />
+    </svg>
+  );
+}
+
 function SettingsIcon({ active }: { active: boolean }) {
   const stroke = active ? "url(#nav-grad)" : "#94a3b8";
   return (
@@ -44,16 +55,18 @@ function SettingsIcon({ active }: { active: boolean }) {
 
 export default function BottomNav({ mySlug }: { mySlug: string | null }) {
   const pathname = usePathname();
-  const myPageHref = mySlug ? `/${mySlug}` : "/me";
+  const myPageHref = mySlug ? `/${mySlug}` : "/setup";
   const myPageActive = mySlug ? pathname === `/${mySlug}` : pathname === "/me";
 
   const dashboardActive = pathname === "/dashboard";
   const settingsActive = pathname === "/me";
+  const guideActive = pathname === "/guide";
 
   const items = [
     { label: "マイページ", href: myPageHref, active: myPageActive, icon: <PersonIcon active={myPageActive} /> },
-    { label: "ダッシュボード", href: "/dashboard", active: dashboardActive, icon: <DashboardIcon active={dashboardActive} /> },
-    { label: "設定", href: "/me", active: settingsActive, icon: <SettingsIcon active={settingsActive} /> },
+    { label: "ダッシュボード", href: mySlug ? "/dashboard" : "/setup", active: dashboardActive, icon: <DashboardIcon active={dashboardActive} /> },
+    { label: "ガイド", href: "/guide", active: guideActive, icon: <GuideIcon active={guideActive} /> },
+    { label: "設定", href: mySlug ? "/me" : "/setup", active: settingsActive, icon: <SettingsIcon active={settingsActive} /> },
   ];
 
   return (

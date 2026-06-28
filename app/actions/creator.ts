@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { r2, R2_BUCKET, R2_PUBLIC_URL } from "@/lib/r2";
 import { getJstDateString } from "@/lib/jst";
+import { containsNgWord } from "@/lib/ngwords";
 
 export async function updateSlug(newSlug: string) {
   const session = await auth();
@@ -14,6 +15,9 @@ export async function updateSlug(newSlug: string) {
   const slugRegex = /^[a-zA-Z0-9_-]{3,30}$/;
   if (!slugRegex.test(newSlug)) {
     return { error: "IDは英数字・アンダースコア・ハイフン（3〜30文字）で入力してください" };
+  }
+  if (containsNgWord(newSlug)) {
+    return { error: "このIDは使用できません" };
   }
 
   const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
@@ -52,6 +56,9 @@ export async function createCreatorProfile(slug: string, displayName: string) {
   if (!slugRegex.test(slug)) {
     return { error: "IDは英数字・アンダースコア・ハイフン（3〜30文字）で入力してください" };
   }
+  if (containsNgWord(slug) || containsNgWord(displayName)) {
+    return { error: "この内容は使用できません" };
+  }
 
   const existing = await db.creatorProfile.findUnique({ where: { slug } });
   if (existing) return { error: "このIDはすでに使われています" };
@@ -77,6 +84,10 @@ export async function updateCreatorProfile(data: {
   const { validateDisplayName } = await import("@/lib/sns-validation");
   const nameErr = validateDisplayName(data.displayName);
   if (nameErr) throw new Error(nameErr);
+
+  if (containsNgWord(data.displayName) || containsNgWord(data.bio)) {
+    return { error: "この内容は使用できません" };
+  }
 
   const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
   if (!profile) throw new Error("Profile not found");

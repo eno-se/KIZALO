@@ -2,6 +2,8 @@
 
 import { useState, useCallback, useTransition, useEffect, useRef } from "react";
 import Image from "next/image";
+import FanRoster from "./FanRoster";
+import AtRiskFanRoster from "./AtRiskFanRoster";
 
 // ---- Types ----
 
@@ -75,10 +77,6 @@ export type AnalyticsProps = {
   initialWeekStart: string;
   initialMonth: string;
   initialYear: number;
-  daily: DailyState;
-  weekly: WeeklyState;
-  monthly: MonthlyState;
-  yearly: YearlyState;
 };
 
 type Tab = "daily" | "weekly" | "monthly" | "yearly";
@@ -522,7 +520,7 @@ function LinkRankMini({ links }: { links: LinkEntry[] }) {
       ) : (
         <div className="space-y-2">
           {links.slice(0, 5).map((link, i) => (
-            <div key={link.linkId} className="flex items-center gap-2">
+            <div key={`${link.linkId}-${link.platform}-${i}`} className="flex items-center gap-2">
               <span className="text-slate-200 font-bold flex-shrink-0" style={{ fontSize: "0.6rem", width: 10, textAlign: "right" }}>{i + 1}</span>
               {link.platform !== "bio" ? (
                 <Image src={`/sns/${link.platform}.png`} alt={link.label} width={14} height={14} className="object-contain flex-shrink-0" />
@@ -554,38 +552,124 @@ function LinkRankMini({ links }: { links: LinkEntry[] }) {
   );
 }
 
+// ---- Empty initial states ----
+
+function makeEmptyDaily(): DailyState {
+  return {
+    hourlyData: Array.from({ length: 24 }, (_, h) => ({ hour: h, count: 0 })),
+    total: 0, prevTotal: 0, peakLabel: null,
+    newFans: 0, continuingFans: 0, returningFans: 0,
+    fanList: [], isToday: true, linkRanking: [],
+  };
+}
+
+function makeEmptyWeekly(): WeeklyState {
+  return {
+    weekData: ["月", "火", "水", "木", "金", "土", "日"].map((label) => ({ label, count: 0 })),
+    total: 0, prevTotal: 0, peakLabel: null, isCurrentWeek: true,
+    topFans: [], newFans: 0, continuingFans: 0, returningFans: 0, linkRanking: [],
+  };
+}
+
+function makeEmptyMonthly(initialMonth: string): MonthlyState {
+  const [yr, mo] = initialMonth.split("-").map(Number);
+  const daysInMonth = new Date(Date.UTC(yr, mo, 0)).getUTCDate();
+  return {
+    monthDays: Array.from({ length: daysInMonth }, (_, i) => ({ day: i + 1, count: 0 })),
+    monthFirstDayOfWeek: new Date(Date.UTC(yr, mo - 1, 1)).getUTCDay(),
+    todayDay: 0,
+    monthWeeklySummary: [],
+    total: 0, prevTotal: 0, peakLabel: null, isCurrentMonth: true,
+    topFans: [], newFans: 0, continuingFans: 0, returningFans: 0, linkRanking: [],
+  };
+}
+
+function makeEmptyYearly(initialYear: number): YearlyState {
+  const isLeap = (initialYear % 4 === 0 && initialYear % 100 !== 0) || initialYear % 400 === 0;
+  return {
+    monthCards: Array.from({ length: 12 }, (_, i) => ({ label: `${i + 1}月`, count: 0, isCurrent: false })),
+    yearHeatmap: Array.from({ length: isLeap ? 366 : 365 }, () => ({ count: 0 })),
+    yearHeatmapStartDayOfWeek: new Date(Date.UTC(initialYear, 0, 1)).getUTCDay(),
+    total: 0, prevTotal: 0, peakLabel: null, isCurrentYear: true,
+    topFans: [], newFans: 0, continuingFans: 0, returningFans: 0, linkRanking: [],
+  };
+}
+
+// ---- CSV Export ----
+
+function CsvExportCard() {
+  const [downloading, setDownloading] = useState(false);
+
+  const download = async () => {
+    if (downloading) return;
+    setDownloading(true);
+    try {
+      const res = await fetch("/api/dashboard/export?type=daily");
+      if (!res.ok) throw new Error("export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const cd = res.headers.get("Content-Disposition") ?? "";
+      const match = cd.match(/filename\*=UTF-8''(.+)/);
+      a.download = match ? decodeURIComponent(match[1]) : "kizalo-daily.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  return (
+    <div className="glass-card rounded-2xl p-5">
+      <div className="text-xs text-slate-400 mb-4">CSVダウンロード</div>
+      <div className="border border-slate-100 rounded-xl p-3.5">
+        <p className="text-sm font-semibold text-slate-700 mb-0.5">日別集計</p>
+        <p className="text-xs text-slate-500 mb-0.5">最初の刻りから今日まで・全期間</p>
+        <p className="text-xs text-slate-400 mb-3">日付 / 刻り数</p>
+        <button
+          onClick={download}
+          disabled={downloading}
+          className="glass-btn-secondary w-full py-2 rounded-lg text-xs font-semibold disabled:opacity-50 cursor-pointer"
+        >
+          {downloading ? "準備中..." : "⬇ ダウンロード"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ---- Main ----
 
 export default function Analytics({
   initialDate, initialWeekStart, initialMonth, initialYear,
-  daily: initDaily, weekly: initWeekly, monthly: initMonthly, yearly: initYearly,
 }: AnalyticsProps) {
   const [tab, setTab] = useState<Tab>("daily");
   const [isPending, startTransition] = useTransition();
 
   // Daily
   const [selectedDate, setSelectedDate] = useState(initialDate);
-  const [dailyData, setDailyData] = useState<DailyState>(initDaily);
+  const [dailyData, setDailyData] = useState<DailyState>(() => makeEmptyDaily());
   const [showDayCal, setShowDayCal] = useState(false);
   const [dayCalMonth, setDayCalMonth] = useState(initialDate.slice(0, 7));
   const [selectedHour, setSelectedHour] = useState<number | null>(null);
 
   // Weekly
   const [selectedWeekStart, setSelectedWeekStart] = useState(initialWeekStart);
-  const [weeklyData, setWeeklyData] = useState<WeeklyState>(initWeekly);
+  const [weeklyData, setWeeklyData] = useState<WeeklyState>(() => makeEmptyWeekly());
   const [showWeekCal, setShowWeekCal] = useState(false);
   const [weekCalMonth, setWeekCalMonth] = useState(initialWeekStart.slice(0, 7));
   const [selectedWeekDay, setSelectedWeekDay] = useState<number | null>(null);
 
   // Monthly
   const [selectedMonth, setSelectedMonth] = useState(initialMonth);
-  const [monthlyData, setMonthlyData] = useState<MonthlyState>(initMonthly);
+  const [monthlyData, setMonthlyData] = useState<MonthlyState>(() => makeEmptyMonthly(initialMonth));
   const [showMonthCal, setShowMonthCal] = useState(false);
   const [monthCalYear, setMonthCalYear] = useState(initialYear);
 
   // Yearly
   const [selectedYear, setSelectedYear] = useState(initialYear);
-  const [yearlyData, setYearlyData] = useState<YearlyState>(initYearly);
+  const [yearlyData, setYearlyData] = useState<YearlyState>(() => makeEmptyYearly(initialYear));
   const [showYearPicker, setShowYearPicker] = useState(false);
 
   // Track initial fetch for 週/月/年
@@ -631,6 +715,11 @@ export default function Analytics({
       setYearlyData(await res.json());
     });
   }, []);
+
+  // マウント時に日タブのデータを取得
+  useEffect(() => {
+    fetchDaily(initialDate);
+  }, []); // eslint-disable-line
 
   // 初回タブ切り替え時に trend/topFans を含む完全データをフェッチ
   useEffect(() => {
@@ -743,6 +832,14 @@ export default function Analytics({
             <FanList fanList={dailyData.fanList} />
           </div>
 
+          {dailyData.isToday && (
+            <div className="glass-card rounded-2xl p-5 relative">
+              <div className="text-xs text-slate-400 mb-0.5">まだ来ていない常連</div>
+              <div className="text-xs text-slate-300 mb-3">昨日刻んで今日まだ来ていない人</div>
+              <AtRiskFanRoster />
+            </div>
+          )}
+
           <div className="glass-card rounded-2xl p-5 relative">
             {isPending && <LoadingOverlay />}
             <LinkRankMini links={dailyData.linkRanking} />
@@ -828,7 +925,7 @@ export default function Analytics({
           <div className="glass-card rounded-2xl p-5 relative">
             {isPending && <LoadingOverlay />}
             <div className="text-xs text-slate-400 mb-3">刻んだ人</div>
-            <TopFanList fans={weeklyData.topFans} />
+            <FanRoster period="weekly" weekStart={selectedWeekStart} />
           </div>
 
           <div className="glass-card rounded-2xl p-5 relative">
@@ -890,7 +987,7 @@ export default function Analytics({
           <div className="glass-card rounded-2xl p-5 relative">
             {isPending && <LoadingOverlay />}
             <div className="text-xs text-slate-400 mb-3">刻んだ人</div>
-            <TopFanList fans={monthlyData.topFans} />
+            <FanRoster period="monthly" month={selectedMonth} />
           </div>
 
           <div className="glass-card rounded-2xl p-5 relative">
@@ -955,7 +1052,7 @@ export default function Analytics({
           <div className="glass-card rounded-2xl p-5 relative">
             {isPending && <LoadingOverlay />}
             <div className="text-xs text-slate-400 mb-3">刻んだ人</div>
-            <TopFanList fans={yearlyData.topFans} />
+            <FanRoster period="yearly" year={String(selectedYear)} />
           </div>
 
           <div className="glass-card rounded-2xl p-5 relative">
@@ -971,6 +1068,8 @@ export default function Analytics({
           </div>
         </>
       )}
+
+      <CsvExportCard />
     </div>
   );
 }

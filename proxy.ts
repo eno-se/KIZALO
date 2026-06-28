@@ -1,6 +1,21 @@
 import { auth } from "@/lib/auth";
-export default auth;
+import { NextResponse } from "next/server";
+
+const SETUP_EXEMPT = ["/setup", "/login", "/me", "/api", "/admin"];
+
+export default auth((req) => {
+  const session = req.auth;
+  if (!session?.user) return NextResponse.next();
+
+  if (!session.user.displayName) {
+    const { pathname } = req.nextUrl;
+    const exempt = SETUP_EXEMPT.some((p) => pathname === p || pathname.startsWith(p + "/"));
+    if (!exempt) return NextResponse.redirect(new URL("/setup", req.url));
+  }
+
+  return NextResponse.next();
+});
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.ico$).*)"],
 };

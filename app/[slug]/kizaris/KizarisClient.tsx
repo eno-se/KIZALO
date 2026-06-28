@@ -55,6 +55,14 @@ type Props = {
   totalCount: number;
   datesWithKizari: string[];
   myUserId: string | null;
+  myFastestRank: number | null;
+  myFastestTime: string | null;
+  myStreakRank: number | null;
+  myStreakDays: number | null;
+  myMostRank: number | null;
+  myTotalKizari: number | null;
+  myDisplayName: string | null;
+  myIconUrl: string | null;
 };
 
 function formatJstTime(iso: string) {
@@ -100,10 +108,13 @@ function buildCalGrid(yearMonth: string) {
   return cells;
 }
 
-function FanAvatar({ name }: { image?: string | null; name: string }) {
+function FanAvatar({ image, name }: { image?: string | null; name: string }) {
   return (
     <div className="rounded-full overflow-hidden flex-shrink-0 bg-pink-50 flex items-center justify-center" style={{ width: 32, height: 32 }}>
-      <span className="text-xs font-bold text-[#F58BCB]">{name[0]}</span>
+      {image
+        ? <Image src={image} alt={name} width={32} height={32} className="object-cover" style={{ width: 32, height: 32 }} unoptimized />
+        : <span className="text-xs font-bold text-[#F58BCB]">{name[0]}</span>
+      }
     </div>
   );
 }
@@ -134,6 +145,14 @@ export default function KizarisClient({
   totalCount,
   datesWithKizari,
   myUserId,
+  myFastestRank,
+  myFastestTime,
+  myStreakRank,
+  myStreakDays,
+  myMostRank,
+  myTotalKizari,
+  myDisplayName,
+  myIconUrl,
 }: Props) {
   const router = useRouter();
   const [tab, setTab] = useState<"fastest" | "streak" | "most">(initTab);
@@ -157,11 +176,15 @@ export default function KizarisClient({
     try {
       const res = await fetch(`/api/kizaris?slug=${slug}&date=${selectedDate}&tab=${tab}&skip=${state.skip}`);
       const data = await res.json();
-      setState((s: typeof state) => ({
-        items: [...s.items, ...data.items],
-        hasMore: data.hasMore,
-        skip: s.skip + data.items.length,
-      }));
+      setState((s: typeof state) => {
+        const existingIds = new Set(s.items.map((i) => i.id));
+        const newItems = data.items.filter((i: { id: string }) => !existingIds.has(i.id));
+        return {
+          items: [...s.items, ...newItems],
+          hasMore: data.hasMore,
+          skip: s.skip + data.items.length,
+        };
+      });
     } finally {
       loadingRef.current = false;
       setIsLoading(false);
@@ -189,11 +212,11 @@ export default function KizarisClient({
 
   const goDate = (date: string) => {
     setShowCal(false);
-    router.push(`/${slug}/kizaris?date=${date}`);
+    router.push(`/${slug}/kizaris?date=${date}&tab=${tab}`);
   };
 
   const goMonth = (month: string) => {
-    router.push(`/${slug}/kizaris?date=${selectedDate}&month=${month}&cal=1`);
+    router.push(`/${slug}/kizaris?date=${selectedDate}&tab=${tab}&month=${month}&cal=1`);
   };
 
   const isEmpty = totalCount === 0;
@@ -355,6 +378,24 @@ export default function KizarisClient({
             );
           })}
         </div>
+
+        {/* 自分の順位（タブ下固定） */}
+        {(() => {
+          const myRank = tab === "fastest" ? myFastestRank : tab === "streak" ? myStreakRank : myMostRank;
+          if (!myRank) return null;
+          return (
+            <div className="glass-card rounded-2xl px-4 py-2.5 flex items-center gap-3">
+              <div className="rounded-full overflow-hidden flex-shrink-0 bg-pink-50 flex items-center justify-center" style={{ width: 28, height: 28 }}>
+                {myIconUrl
+                  ? <Image src={myIconUrl} alt="" width={28} height={28} className="object-cover" style={{ width: 28, height: 28 }} unoptimized />
+                  : <span className="text-xs font-bold text-[#F58BCB]">{(myDisplayName ?? "あ")[0]}</span>
+                }
+              </div>
+              <span className="text-sm font-bold brand-gradient-text flex-1 truncate">{myDisplayName ?? "あなた"}</span>
+              <span className="text-sm font-bold brand-gradient-text flex-shrink-0">{myRank}位</span>
+            </div>
+          );
+        })()}
       </div>{/* end sticky */}
 
       {/* Count */}
@@ -374,7 +415,7 @@ export default function KizarisClient({
           {tab === "fastest"
             ? fastest.items.map((item, idx) => (
                 <div
-                  key={item.id}
+                  key={`fastest-${item.id}`}
                   className={`flex items-center gap-3 px-4 py-3.5 transition-colors
                     ${idx > 0 ? "border-t border-white/30" : ""}
                     ${item.fanId === myUserId ? "bg-white/25" : ""}
@@ -427,7 +468,7 @@ export default function KizarisClient({
             : tab === "most"
             ? most.items.map((item, idx) => (
                 <div
-                  key={item.id}
+                  key={`most-${item.id}`}
                   className={`flex items-center gap-3 px-4 py-3.5 transition-colors
                     ${idx > 0 ? "border-t border-white/30" : ""}
                     ${item.fanId === myUserId ? "bg-white/25" : ""}
@@ -477,7 +518,7 @@ export default function KizarisClient({
                 const isRecord = item.streakDays > 0 && item.streakDays >= item.maxStreakDays;
                 return (
                   <div
-                    key={item.id}
+                    key={`streak-${item.id}`}
                     className={`flex items-center gap-3 px-4 py-3.5 transition-colors
                       ${idx > 0 ? "border-t border-white/30" : ""}
                       ${item.fanId === myUserId ? "bg-white/25" : ""}

@@ -14,7 +14,7 @@ export default async function LoginPage() {
     ? await db.user.findMany({
         select: { id: true, displayName: true, name: true, email: true },
         orderBy: { createdAt: "asc" },
-        take: 30,
+        take: 1000,
       })
     : [];
 

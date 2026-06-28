@@ -21,6 +21,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "KIZALO — 推しのプロフィールに、名前を刻む。",
   description: "推しのプロフィールに自分の名前を刻もう。毎日1回、応援の証を残せる。",
+  appleWebApp: {
+    capable: true,
+    title: "KIZALO",
+    statusBarStyle: "default",
+  },
 };
 
 export default async function RootLayout({

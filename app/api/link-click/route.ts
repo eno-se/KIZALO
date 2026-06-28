@@ -9,9 +9,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false }, { status: 400 });
   }
 
-  await db.linkClick.create({
-    data: { creatorId, linkId, label, platform, date: getJstDateString() },
-  });
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+    req.headers.get("x-real-ip") ??
+    "0.0.0.0";
+
+  try {
+    await db.linkClick.create({
+      data: { creatorId, linkId, label, platform, date: getJstDateString(), ip },
+    });
+  } catch {
+    // ユニーク制約違反 = 同じIPが今日すでにこのリンクをクリック済み → 無視
+  }
 
   return NextResponse.json({ ok: true });
 }

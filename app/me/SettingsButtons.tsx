@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { logoutUser, deleteAccount } from "@/app/actions/user";
 
 // TODO: Googleフォームが完成したらURLを差し替える
-const CONTACT_URL = "https://docs.google.com/forms/";
+const CONTACT_URL = "https://docs.google.com/forms/d/e/1FAIpQLSdExCpeqFErxpnVwLo49M9K2Lf70kxI6x9DgnxZAs6yTpESFg/viewform";
 
 export default function SettingsButtons() {
   const [showConfirm, setShowConfirm] = useState(false);

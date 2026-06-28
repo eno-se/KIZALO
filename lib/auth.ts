@@ -14,6 +14,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     session({ session, user }) {
       session.user.id = user.id;
+      session.user.displayName = (user as { displayName?: string | null }).displayName ?? null;
       return session;
     },
   },

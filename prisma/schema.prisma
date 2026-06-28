@@ -14,6 +14,7 @@ model User {
   emailVerified DateTime?
   image         String?
   displayName   String?
+  isSuspended   Boolean   @default(false)
   accounts      Account[]
   sessions      Session[]
 
@@ -76,6 +77,8 @@ model FanFollow {
   updatedAt    DateTime       @updatedAt
 
   @@unique([fanId, creatorId])
+  @@index([creatorId, totalKizari])
+  @@index([creatorId, streakDays])
 }
 
 model Kizari {
@@ -88,6 +91,7 @@ model Kizari {
   createdAt DateTime       @default(now())
 
   @@unique([fanId, creatorId, date])
+  @@index([creatorId, date, createdAt])
 }
 
 model LinkClick {
@@ -98,8 +102,10 @@ model LinkClick {
   label     String
   platform  String
   date      String
+  ip        String         @default("")
   createdAt DateTime       @default(now())
 
+  @@unique([ip, linkId, date])
   @@index([creatorId, date])
 }
 

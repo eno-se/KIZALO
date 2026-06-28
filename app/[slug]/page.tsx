@@ -1,8 +1,9 @@
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getJstDateString } from "@/lib/jst";
-import KizaruButton from "./KizaruButton";
+import KizaruSection from "./KizaruSection";
+import KizaruCardWrapper from "./KizaruCardWrapper";
 import TrackedLink from "./TrackedLink";
 import BioText from "@/app/components/BioText";
 import FanNameMarquee from "@/app/components/FanNameMarquee";
@@ -51,6 +52,15 @@ const PLATFORM_LABEL: Record<string, string> = {
 export default async function CreatorPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const session = await auth();
+
+  // ログイン済みでCreatorProfileがない場合は/editへ
+  if (session?.user) {
+    const myProfile = await db.creatorProfile.findUnique({
+      where: { userId: session.user.id },
+      select: { id: true },
+    });
+    if (!myProfile) redirect("/edit");
+  }
 
   const creator = await db.creatorProfile.findUnique({
     where: { slug },
@@ -223,24 +233,18 @@ export default async function CreatorPage({ params }: { params: Promise<{ slug: 
 
       </div>
 
-      {/* キザるボタン（固定） */}
-      {!isOwner && creator.showKizaruButton && (
-        <div className="fixed bottom-16 left-0 right-0 z-40 px-4 pb-2 pt-4">
-          <div className="max-w-lg mx-auto flex justify-center">
-            <KizaruButton
-              creatorId={creator.id}
-              slug={slug}
-              alreadyKizared={alreadyKizared}
-              isLoggedIn={!!session}
-              streakDays={followInfo?.streakDays ?? 0}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* 私の刻み実績 */}
-      {session && !isOwner && (
-        <div className="relative rounded-2xl pt-3 pb-4 px-4 mt-4 overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(245,139,203,0.75) 0%, rgba(185,138,245,0.80) 50%, rgba(125,183,255,0.72) 100%)", border: "1px solid rgba(255,255,255,0.40)", boxShadow: "0 4px 24px rgba(185,138,245,0.35)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}>
+      <KizaruSection
+        creatorId={creator.id}
+        slug={slug}
+        alreadyKizared={alreadyKizared}
+        isLoggedIn={!!session}
+        streakDays={followInfo?.streakDays ?? 0}
+        isOwner={isOwner}
+        showKizaruButton={creator.showKizaruButton}
+      >
+        {session && !isOwner && (
+        <KizaruCardWrapper>
+        <div className="relative rounded-2xl pt-3 pb-4 px-4 overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(245,139,203,0.75) 0%, rgba(185,138,245,0.80) 50%, rgba(125,183,255,0.72) 100%)", border: "1px solid rgba(255,255,255,0.40)", boxShadow: "0 4px 24px rgba(185,138,245,0.35)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}>
           <Image src="/logo.png" alt="KIZALO" width={56} height={17} className="absolute top-3 left-4 object-contain" style={{ filter: "brightness(0) invert(1)" }} />
           {/* 右上リボン（カードのoverflow-hiddenでクリップ） */}
           <div
@@ -311,22 +315,31 @@ export default async function CreatorPage({ params }: { params: Promise<{ slug: 
               🔥 記録更新中！！
             </p>
           )}
+          {alreadyKizared && (followInfo?.streakDays ?? 0) >= 1 && (
+            <p className="text-center text-white/80 mt-2" style={{ fontSize: "0.7rem" }}>
+              明日も刻ると {(followInfo?.streakDays ?? 0) + 1}日連続になるよ！
+            </p>
+          )}
         </div>
-      )}
-
-      {/* カード（cardOrderに従って描画） */}
-      {(creator.cardOrder ?? "fastest,random,kizaki").split(",").map((key) => {
+        </KizaruCardWrapper>
+        )}
+        {/* カード（cardOrderに従って描画） */}
+        {(creator.cardOrder ?? "fastest,random,kizaki").split(",").map((key) => {
         if (key === "fastest") return (
-          <div key="fastest" className="glass-card rounded-2xl pt-2 pb-4 px-5 mt-4">
+          <KizaruCardWrapper key="fastest">
+          <div className="glass-card rounded-2xl pt-2 pb-4 px-5">
             <h2 className="text-xs font-bold brand-gradient-text text-center mb-3 flex items-center justify-center gap-1.5">
-              <span className="sparkle" />今日、{creator.displayName}に最速で刻んだ人<span className="sparkle" />
+              <span className="sparkle" />最速<span className="sparkle" />
             </h2>
             {!creator.showFastestCard ? (
               <div className="flex justify-center py-2">
                 <span style={{ display: "inline-block", width: 32, height: 32, maskImage: "url(/hidden-icon.png)", maskSize: "contain", maskRepeat: "no-repeat", maskPosition: "center", WebkitMaskImage: "url(/hidden-icon.png)", WebkitMaskSize: "contain", WebkitMaskRepeat: "no-repeat", WebkitMaskPosition: "center", background: "#94a3b8" }} />
               </div>
             ) : fastestKizaris.length === 0 ? (
-              <p className="text-center text-slate-400 text-xs py-2">まだ誰も刻っていません</p>
+              <div className="text-center py-3">
+                <p className="text-slate-400 text-xs">まだ誰も刻っていません</p>
+                <p className="text-xs font-bold brand-gradient-text mt-1">今日最初に刻む人になろう！</p>
+              </div>
             ) : (
               <>
                 <div className="grid grid-cols-3 gap-2">
@@ -352,19 +365,24 @@ export default async function CreatorPage({ params }: { params: Promise<{ slug: 
               </>
             )}
           </div>
+          </KizaruCardWrapper>
         );
 
         if (key === "random") return (
-          <div key="random" className="glass-card rounded-2xl pt-2 pb-4 px-5 mt-4">
+          <KizaruCardWrapper key="random">
+          <div className="glass-card rounded-2xl pt-2 pb-4 px-5">
             <h2 className="text-xs font-bold brand-gradient-text text-center mb-1 flex items-center justify-center gap-1.5">
-              <span className="sparkle" />今日、{creator.displayName}に刻んだ人<span className="sparkle" />
+              <span className="sparkle" />ランダム<span className="sparkle" />
             </h2>
             {!creator.showRandomCard ? (
               <div className="flex justify-center py-2">
                 <span style={{ display: "inline-block", width: 32, height: 32, maskImage: "url(/hidden-icon.png)", maskSize: "contain", maskRepeat: "no-repeat", maskPosition: "center", WebkitMaskImage: "url(/hidden-icon.png)", WebkitMaskSize: "contain", WebkitMaskRepeat: "no-repeat", WebkitMaskPosition: "center", background: "#94a3b8" }} />
               </div>
             ) : randomKizaris.length === 0 ? (
-              <p className="text-center text-slate-400 text-xs py-2">まだ誰も刻っていません</p>
+              <div className="text-center py-3">
+                <p className="text-slate-400 text-xs">まだ誰も刻っていません</p>
+                <p className="text-xs font-bold brand-gradient-text mt-1">今日最初に刻む人になろう！</p>
+              </div>
             ) : (
               <>
                 <p className="text-center text-slate-400 mb-3" style={{ fontSize: "0.6rem" }}>ランダムで{randomKizaris.length}名表示中！</p>
@@ -391,19 +409,24 @@ export default async function CreatorPage({ params }: { params: Promise<{ slug: 
               </>
             )}
           </div>
+          </KizaruCardWrapper>
         );
 
         if (key === "most") return (
-          <div key="most" className="glass-card rounded-2xl pt-2 pb-4 px-5 mt-4">
+          <KizaruCardWrapper key="most">
+          <div className="glass-card rounded-2xl pt-2 pb-4 px-5">
             <h2 className="text-xs font-bold brand-gradient-text text-center mb-3 flex items-center justify-center gap-1.5">
-              <span className="sparkle" />{creator.displayName}を最多で刻んだ人<span className="sparkle" />
+              <span className="sparkle" />歴代最多<span className="sparkle" />
             </h2>
             {!creator.showMostCard ? (
               <div className="flex justify-center py-2">
                 <span style={{ display: "inline-block", width: 32, height: 32, maskImage: "url(/hidden-icon.png)", maskSize: "contain", maskRepeat: "no-repeat", maskPosition: "center", WebkitMaskImage: "url(/hidden-icon.png)", WebkitMaskSize: "contain", WebkitMaskRepeat: "no-repeat", WebkitMaskPosition: "center", background: "#94a3b8" }} />
               </div>
             ) : mostFans.length === 0 ? (
-              <p className="text-center text-slate-400 text-xs py-2">まだ誰も刻っていません</p>
+              <div className="text-center py-3">
+                <p className="text-slate-400 text-xs">まだ誰も刻っていません</p>
+                <p className="text-xs font-bold brand-gradient-text mt-1">今日最初に刻む人になろう！</p>
+              </div>
             ) : (
               <div className="grid grid-cols-3 gap-2">
                 {mostFans.map((f) => {
@@ -427,19 +450,24 @@ export default async function CreatorPage({ params }: { params: Promise<{ slug: 
               </div>
             )}
           </div>
+          </KizaruCardWrapper>
         );
 
         if (key === "streak") return (
-          <div key="streak" className="glass-card rounded-2xl pt-2 pb-4 px-5 mt-4">
+          <KizaruCardWrapper key="streak">
+          <div className="glass-card rounded-2xl pt-2 pb-4 px-5">
             <h2 className="text-xs font-bold brand-gradient-text text-center mb-3 flex items-center justify-center gap-1.5">
-              <span className="sparkle" />{creator.displayName}を継続で刻んだ人<span className="sparkle" />
+              <span className="sparkle" />歴代継続<span className="sparkle" />
             </h2>
             {!creator.showStreakCard ? (
               <div className="flex justify-center py-2">
                 <span style={{ display: "inline-block", width: 32, height: 32, maskImage: "url(/hidden-icon.png)", maskSize: "contain", maskRepeat: "no-repeat", maskPosition: "center", WebkitMaskImage: "url(/hidden-icon.png)", WebkitMaskSize: "contain", WebkitMaskRepeat: "no-repeat", WebkitMaskPosition: "center", background: "#94a3b8" }} />
               </div>
             ) : streakFans.length === 0 ? (
-              <p className="text-center text-slate-400 text-xs py-2">まだ誰も刻っていません</p>
+              <div className="text-center py-3">
+                <p className="text-slate-400 text-xs">まだ誰も刻っていません</p>
+                <p className="text-xs font-bold brand-gradient-text mt-1">今日最初に刻む人になろう！</p>
+              </div>
             ) : (
               <div className="grid grid-cols-3 gap-2">
                 {streakFans.map((f) => {
@@ -463,10 +491,12 @@ export default async function CreatorPage({ params }: { params: Promise<{ slug: 
               </div>
             )}
           </div>
+          </KizaruCardWrapper>
         );
 
         return null;
       })}
+      </KizaruSection>
 
     </div>
   );

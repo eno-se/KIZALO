@@ -11,10 +11,15 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { contentType } = await req.json();
+    const { contentType, contentLength } = await req.json();
     const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (!allowed.includes(contentType)) {
       return NextResponse.json({ error: "Invalid file type" }, { status: 400 });
+    }
+
+    const MAX_BYTES = 20 * 1024 * 1024; // 20MB ceiling（クロップで通常は 400x400 JPEG になるので実際は数百KB以下）
+    if (!Number.isInteger(contentLength) || contentLength <= 0 || contentLength > MAX_BYTES) {
+      return NextResponse.json({ error: "ファイルサイズが不正です" }, { status: 400 });
     }
 
     const ext = contentType.split("/")[1].replace("jpeg", "jpg");
@@ -24,6 +29,7 @@ export async function POST(req: NextRequest) {
       Bucket: R2_BUCKET,
       Key: key,
       ContentType: contentType,
+      ContentLength: contentLength,
     });
 
     const presignedUrl = await getSignedUrl(r2, command, { expiresIn: 300 });

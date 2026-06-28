@@ -18,7 +18,7 @@ export default async function KizarisPage({
 
   const today = getJstDateString();
   const selectedDate = sp.date ?? today;
-  const activeTab = sp.tab === "streak" ? "streak" : "fastest";
+  const activeTab = sp.tab === "streak" ? "streak" : sp.tab === "most" ? "most" : "fastest";
   const showCalendar = sp.cal === "1";
   const calendarMonth = sp.month ?? selectedDate.slice(0, 7);
 
@@ -34,7 +34,7 @@ export default async function KizarisPage({
   // Fastest: first 30+1 ordered by createdAt asc
   const fastestRaw = await db.kizari.findMany({
     where: { creatorId: creator.id, date: selectedDate },
-    include: { fan: { select: { id: true, displayName: true, name: true, image: true } } },
+    include: { fan: { select: { id: true, displayName: true, name: true, creatorProfile: { select: { iconUrl: true } } } } },
     orderBy: { createdAt: "asc" },
     take: INITIAL_TAKE + 1,
   });
@@ -51,8 +51,8 @@ export default async function KizarisPage({
     fanIds.length > 0
       ? await db.fanFollow.findMany({
           where: { creatorId: creator.id, fanId: { in: fanIds } },
-          orderBy: { streakDays: "desc" },
-          include: { fan: { select: { id: true, displayName: true, name: true, image: true } } },
+          orderBy: [{ streakDays: "desc" }, { id: "asc" }],
+          include: { fan: { select: { id: true, displayName: true, name: true, creatorProfile: { select: { iconUrl: true } } } } },
           take: INITIAL_TAKE + 1,
         })
       : [];
@@ -63,8 +63,8 @@ export default async function KizarisPage({
     fanIds.length > 0
       ? await db.fanFollow.findMany({
           where: { creatorId: creator.id, fanId: { in: fanIds } },
-          orderBy: { totalKizari: "desc" },
-          include: { fan: { select: { id: true, displayName: true, name: true, image: true } } },
+          orderBy: [{ totalKizari: "desc" }, { id: "asc" }],
+          include: { fan: { select: { id: true, displayName: true, name: true, creatorProfile: { select: { iconUrl: true } } } } },
           take: INITIAL_TAKE + 1,
         })
       : [];
@@ -88,33 +88,83 @@ export default async function KizarisPage({
     fanId: k.fanId,
     fanName: k.fan.displayName ?? k.fan.name ?? "名無し",
     fanHandle: k.fan.displayName ? (k.fan.name ?? null) : null,
-    fanImage: k.fan.image ?? null,
+    fanImage: k.fan.creatorProfile?.iconUrl ?? null,
     createdAt: k.createdAt.toISOString(),
   }));
 
   const streakItems = streakRaw.slice(0, INITIAL_TAKE).map((f, i) => ({
-    id: `${f.fanId}-${f.creatorId}`,
+    id: f.id,
     rank: i + 1,
     fanId: f.fanId,
     fanName: f.fan.displayName ?? f.fan.name ?? "名無し",
     fanHandle: f.fan.displayName ? (f.fan.name ?? null) : null,
-    fanImage: f.fan.image ?? null,
+    fanImage: f.fan.creatorProfile?.iconUrl ?? null,
     streakDays: f.streakDays,
     maxStreakDays: f.maxStreakDays,
     totalKizari: f.totalKizari,
   }));
 
   const mostItems = mostRaw.slice(0, INITIAL_TAKE).map((f, i) => ({
-    id: `most-${f.fanId}`,
+    id: f.id,
     rank: i + 1,
     fanId: f.fanId,
     fanName: f.fan.displayName ?? f.fan.name ?? "名無し",
     fanHandle: f.fan.displayName ? (f.fan.name ?? null) : null,
-    fanImage: f.fan.image ?? null,
+    fanImage: f.fan.creatorProfile?.iconUrl ?? null,
     totalKizari: f.totalKizari,
   }));
 
   const totalCount = fanIds.length;
+
+  // 自分の順位（その日に刻んでいる場合のみ）
+  let myFastestRank: number | null = null;
+  let myFastestTime: string | null = null;
+  let myStreakRank: number | null = null;
+  let myStreakDays: number | null = null;
+  let myMostRank: number | null = null;
+  let myTotalKizari: number | null = null;
+  let myDisplayName: string | null = null;
+  let myIconUrl: string | null = null;
+
+  if (myUserId && fanIds.includes(myUserId)) {
+    const [myKizari, myFollow, myUser] = await Promise.all([
+      db.kizari.findUnique({
+        where: { fanId_creatorId_date: { fanId: myUserId, creatorId: creator.id, date: selectedDate } },
+      }),
+      db.fanFollow.findUnique({
+        where: { fanId_creatorId: { fanId: myUserId, creatorId: creator.id } },
+      }),
+      db.user.findUnique({
+        where: { id: myUserId },
+        select: { displayName: true, name: true, creatorProfile: { select: { iconUrl: true } } },
+      }),
+    ]);
+    myDisplayName = myUser?.displayName ?? myUser?.name ?? null;
+    myIconUrl = myUser?.creatorProfile?.iconUrl ?? null;
+
+    if (myKizari) {
+      const fasterCount = await db.kizari.count({
+        where: { creatorId: creator.id, date: selectedDate, createdAt: { lt: myKizari.createdAt } },
+      });
+      myFastestRank = fasterCount + 1;
+      myFastestTime = myKizari.createdAt.toISOString();
+    }
+
+    if (myFollow) {
+      const [betterStreakCount, betterMostCount] = await Promise.all([
+        db.fanFollow.count({
+          where: { creatorId: creator.id, fanId: { in: fanIds }, streakDays: { gt: myFollow.streakDays } },
+        }),
+        db.fanFollow.count({
+          where: { creatorId: creator.id, fanId: { in: fanIds }, totalKizari: { gt: myFollow.totalKizari } },
+        }),
+      ]);
+      myStreakRank = betterStreakCount + 1;
+      myStreakDays = myFollow.streakDays;
+      myMostRank = betterMostCount + 1;
+      myTotalKizari = myFollow.totalKizari;
+    }
+  }
 
   return (
     <KizarisClient
@@ -135,6 +185,14 @@ export default async function KizarisPage({
       totalCount={totalCount}
       datesWithKizari={kizariDates.map((k) => k.date)}
       myUserId={myUserId}
+      myFastestRank={myFastestRank}
+      myFastestTime={myFastestTime}
+      myStreakRank={myStreakRank}
+      myStreakDays={myStreakDays}
+      myMostRank={myMostRank}
+      myTotalKizari={myTotalKizari}
+      myDisplayName={myDisplayName}
+      myIconUrl={myIconUrl}
     />
   );
 }

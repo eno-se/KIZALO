@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
   if (tab === "fastest") {
     const rows = await db.kizari.findMany({
       where: { creatorId: creator.id, date },
-      include: { fan: { select: { id: true, displayName: true, name: true, image: true } } },
+      include: { fan: { select: { id: true, displayName: true, name: true, creatorProfile: { select: { iconUrl: true } } } } },
       orderBy: { createdAt: "asc" },
       skip,
       take: TAKE + 1,
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
       fanId: k.fanId,
       fanName: k.fan.displayName ?? k.fan.name ?? "名無し",
       fanHandle: k.fan.displayName ? (k.fan.name ?? null) : null,
-      fanImage: k.fan.image ?? null,
+      fanImage: k.fan.creatorProfile?.iconUrl ?? null,
       createdAt: k.createdAt.toISOString(),
     }));
 
@@ -59,24 +59,26 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ items: [], hasMore: false, myUserId });
     }
 
-    const orderBy = tab === "most" ? { totalKizari: "desc" as const } : { streakDays: "desc" as const };
+    const orderBy = tab === "most"
+      ? [{ totalKizari: "desc" as const }, { id: "asc" as const }]
+      : [{ streakDays: "desc" as const }, { id: "asc" as const }];
 
     const rows = await db.fanFollow.findMany({
       where: { creatorId: creator.id, fanId: { in: fanIds } },
       orderBy,
-      include: { fan: { select: { id: true, displayName: true, name: true, image: true } } },
+      include: { fan: { select: { id: true, displayName: true, name: true, creatorProfile: { select: { iconUrl: true } } } } },
       skip,
       take: TAKE + 1,
     });
 
     const hasMore = rows.length > TAKE;
     const items = rows.slice(0, TAKE).map((f, i) => ({
-      id: tab === "most" ? `most-${f.fanId}` : `${f.fanId}-${f.creatorId}`,
+      id: f.id,
       rank: skip + i + 1,
       fanId: f.fanId,
       fanName: f.fan.displayName ?? f.fan.name ?? "名無し",
       fanHandle: f.fan.displayName ? (f.fan.name ?? null) : null,
-      fanImage: f.fan.image ?? null,
+      fanImage: f.fan.creatorProfile?.iconUrl ?? null,
       streakDays: f.streakDays,
       maxStreakDays: f.maxStreakDays,
       totalKizari: f.totalKizari,

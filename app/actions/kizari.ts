@@ -48,7 +48,13 @@ export async function kizaru(creatorId: string, slug: string) {
 
   revalidatePath(`/${slug}`);
   revalidatePath("/me");
-  return { success: true };
+
+  const prevMaxStreak = follow?.maxStreakDays ?? 0;
+  return {
+    success: true,
+    newStreak,
+    isNewRecord: newStreak >= 2 && newStreak > prevMaxStreak,
+  };
 }
 
 export async function checkKizariStatus(creatorId: string): Promise<boolean> {

@@ -102,7 +102,7 @@ export default function EditProfileForm({ displayName, bio, bioLink, bioLinkLabe
       const res = await fetch("/api/upload-icon", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contentType: "image/jpeg" }),
+        body: JSON.stringify({ contentType: "image/jpeg", contentLength: blob.size }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));

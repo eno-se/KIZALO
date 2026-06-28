@@ -23,19 +23,19 @@ type CardKey = "fastest" | "random" | "most" | "streak";
 
 const CARD_META: Record<CardKey, { label: string; description: string }> = {
   fastest: {
-    label: "今日○○に最速で刻んだ人",
+    label: "最速",
     description: "毎日いち早く刻んでくれる、熱量の高いファンを最大6名アピールできます",
   },
   random: {
-    label: "今日○○に刻んだ人（ランダム）",
+    label: "ランダム",
     description: "今日刻ってくれたファンを最大6名ランダムに紹介。すべてのファンに表示チャンスがあります",
   },
   most: {
-    label: "最多で刻んだ人",
+    label: "歴代最多",
     description: "累計刻り数が多いファンTop6。熱量の強い人が一目でわかります",
   },
   streak: {
-    label: "継続で刻んだ人",
+    label: "歴代継続",
     description: "連続刻り日数が長いファンTop6。毎日来てくれる常連ファンが見えます",
   },
 };

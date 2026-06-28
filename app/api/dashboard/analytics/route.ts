@@ -66,7 +66,8 @@ export async function GET(req: NextRequest) {
     const prevDate = addDays(date, -1);
     const nextDate = addDays(date, 1);
 
-    const [kizaris, prevCount, prevFanGroups, newFanCount, linkRanking] = await Promise.all([
+    const isToday = date === todayStr;
+    const [kizaris, prevCount, prevFanGroups, newFanCount, linkRanking, atRiskFollows] = await Promise.all([
       db.kizari.findMany({
         where: { creatorId: profile.id, date },
         include: { fan: { select: { id: true, displayName: true } } },
@@ -81,6 +82,31 @@ export async function GET(req: NextRequest) {
         },
       }),
       getLinkRanking(profile.id, { date }),
+      // 昨日刻んで今日まだ来ていないファン（今日のみ取得）
+      isToday
+        ? db.fanFollow.findMany({
+            where: {
+              creatorId: profile.id,
+              streakDays: { gte: 1 },
+              lastKizariAt: {
+                gte: new Date(prevDate + "T00:00:00+09:00"),
+                lt: new Date(todayStr + "T00:00:00+09:00"),
+              },
+            },
+            orderBy: { streakDays: "desc" },
+            take: 20,
+            include: {
+              fan: {
+                select: {
+                  id: true,
+                  displayName: true,
+                  name: true,
+                  creatorProfile: { select: { iconUrl: true } },
+                },
+              },
+            },
+          })
+        : Promise.resolve([]),
     ]);
 
     const hourMap: Record<number, number> = {};
@@ -102,6 +128,16 @@ export async function GET(req: NextRequest) {
     const prevFanIds = new Set(prevFanGroups.map((r) => r.fanId));
     const { continuingFans, returningFans } = computeTrend(currentFanIds, prevFanIds, newFanCount);
 
+    // 今日まだ刻んでいないファンのみ残す
+    const atRiskFans = atRiskFollows
+      .filter((f) => !currentFanIds.has(f.fanId))
+      .map((f) => ({
+        id: f.fanId,
+        name: f.fan.displayName ?? f.fan.name ?? "ファン",
+        iconUrl: f.fan.creatorProfile?.iconUrl ?? null,
+        streakDays: f.streakDays,
+      }));
+
     return NextResponse.json({
       hourlyData,
       total: kizaris.length,
@@ -111,7 +147,8 @@ export async function GET(req: NextRequest) {
       continuingFans,
       returningFans,
       fanList,
-      isToday: date === todayStr,
+      atRiskFans,
+      isToday,
       linkRanking,
     });
   }
