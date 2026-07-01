@@ -3,11 +3,19 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getJstDateString } from "@/lib/jst";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 
 export async function kizaru(creatorId: string, slug: string) {
   const session = await auth();
   if (!session) return { error: "ログインしてください" };
+
+  const headersList = await headers();
+  const ip = headersList.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  if (!checkRateLimit(`kizaru:${ip}`, 10, 60 * 1000)) {
+    return { error: "リクエストが多すぎます。しばらくお待ちください。" };
+  }
 
   const today = getJstDateString();
   const userId = session.user.id;

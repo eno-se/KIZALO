@@ -4,7 +4,8 @@ import { auth, signOut } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
-export async function setupUser(displayName: string, slug: string) {
+export async function setupUser(displayName: string, slug: string, honeypot: string = "") {
+  if (honeypot) return { error: "エラーが発生しました" };
   const session = await auth();
   if (!session) throw new Error("Unauthorized");
 

@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 開発ワークフロー
+
+**実装 → ローカル確認 → ユーザーOK → コミット・プッシュ** の順番を必ず守る。
+実装が完了しても、ユーザーがローカルで確認してOKを出すまでコミット・プッシュしない。
+
 ## Commands
 
 ```bash

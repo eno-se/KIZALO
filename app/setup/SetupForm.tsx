@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { setupUser } from "@/app/actions/user";
 
@@ -11,6 +11,7 @@ export default function SetupForm({ defaultName }: { defaultName: string }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const honeypotRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,7 +20,8 @@ export default function SetupForm({ defaultName }: { defaultName: string }) {
     if (!agreed) { setError("利用規約とプライバシーポリシーへの同意が必要です"); return; }
     setError(null);
     startTransition(async () => {
-      const result = await setupUser(name.trim(), slug.trim());
+      const honeypot = honeypotRef.current?.value ?? "";
+      const result = await setupUser(name.trim(), slug.trim(), honeypot);
       if (result?.error) {
         setError(result.error);
       } else if (result?.slug) {
@@ -30,6 +32,16 @@ export default function SetupForm({ defaultName }: { defaultName: string }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Honeypot: ボット対策。人間には見えない */}
+      <input
+        ref={honeypotRef}
+        type="text"
+        name="website"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        style={{ position: "absolute", left: "-9999px", width: "1px", height: "1px", opacity: 0 }}
+      />
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-1">表示名</label>
         <input
