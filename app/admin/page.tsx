@@ -5,11 +5,12 @@ export default async function AdminPage() {
   const today = getJstDateString();
   const yesterday = getJstYesterdayString();
 
-  const [userCount, kizariToday, kizariYesterday, kizariTotal] = await Promise.all([
+  const [userCount, kizariToday, kizariYesterday, kizariTotal, reportCount] = await Promise.all([
     db.user.count(),
     db.kizari.count({ where: { date: today } }),
     db.kizari.count({ where: { date: yesterday } }),
     db.kizari.count(),
+    db.report.count(),
   ]);
 
   const stats = [
@@ -17,7 +18,7 @@ export default async function AdminPage() {
     { label: "本日の刻み", value: kizariToday, color: "#B98AF5" },
     { label: "昨日の刻み", value: kizariYesterday, color: "#7DB7FF" },
     { label: "累計刻み数", value: kizariTotal, color: "#F58BCB" },
-    { label: "通報件数", value: 0, color: "#94a3b8" },
+    { label: "通報件数", value: reportCount, color: "#94a3b8" },
   ];
 
   return (

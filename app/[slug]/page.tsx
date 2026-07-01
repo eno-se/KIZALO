@@ -8,6 +8,7 @@ import TrackedLink from "./TrackedLink";
 import BioText from "@/app/components/BioText";
 import FanNameMarquee from "@/app/components/FanNameMarquee";
 import ShareButton from "./ShareButton";
+import ReportButton from "./ReportButton";
 import Image from "next/image";
 import type { Metadata } from "next";
 
@@ -497,6 +498,12 @@ export default async function CreatorPage({ params }: { params: Promise<{ slug: 
         return null;
       })}
       </KizaruSection>
+
+      {session && !isOwner && (
+        <div className="flex justify-center mt-6 mb-2">
+          <ReportButton targetUserId={creator.userId} />
+        </div>
+      )}
 
     </div>
   );

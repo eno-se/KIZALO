@@ -62,3 +62,15 @@ export async function adminDeleteKizari(kizariId: string) {
   await db.kizari.delete({ where: { id: kizariId } });
   revalidatePath("/admin/kizaris");
 }
+
+export async function adminBanUser(userId: string, ban: boolean) {
+  await requireAdmin();
+  await db.user.update({ where: { id: userId }, data: { isBanned: ban } });
+  revalidatePath("/admin/reports");
+}
+
+export async function adminDeleteReport(reportId: string) {
+  await requireAdmin();
+  await db.report.delete({ where: { id: reportId } });
+  revalidatePath("/admin/reports");
+}

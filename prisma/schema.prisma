@@ -15,12 +15,15 @@ model User {
   image         String?
   displayName   String?
   isSuspended   Boolean   @default(false)
+  isBanned      Boolean   @default(false)
   accounts      Account[]
   sessions      Session[]
 
-  creatorProfile CreatorProfile?
-  kizaris        Kizari[]
-  follows        FanFollow[]
+  creatorProfile  CreatorProfile?
+  kizaris         Kizari[]
+  follows         FanFollow[]
+  reportsGiven    Report[]  @relation("ReporterReports")
+  reportsReceived Report[]  @relation("TargetReports")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -107,6 +110,19 @@ model LinkClick {
 
   @@unique([ip, linkId, date])
   @@index([creatorId, date])
+}
+
+model Report {
+  id           String   @id @default(cuid())
+  reporterId   String
+  reporter     User     @relation("ReporterReports", fields: [reporterId], references: [id], onDelete: Cascade)
+  targetUserId String
+  targetUser   User     @relation("TargetReports", fields: [targetUserId], references: [id], onDelete: Cascade)
+  reason       String
+  createdAt    DateTime @default(now())
+
+  @@unique([reporterId, targetUserId])
+  @@index([targetUserId])
 }
 
 // NextAuth
