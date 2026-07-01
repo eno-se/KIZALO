@@ -7,6 +7,7 @@ import LiquidGlassFilter from "./components/LiquidGlassFilter";
 import NextTopLoader from "nextjs-toploader";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -71,6 +72,7 @@ export default async function RootLayout({
         <div className="pt-14 pb-16">{children}</div>
         <BottomNav mySlug={mySlug} />
       </body>
+      <GoogleAnalytics gaId="G-CJDKRNS05W" />
     </html>
   );
 }
