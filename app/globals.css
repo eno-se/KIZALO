@@ -9,6 +9,9 @@
   --color-kizalo-lavender: #B98AF5;
   --color-kizalo-sky: #7DB7FF;
   --color-kizalo-gray: #9A9AA3;
+
+  /* 薄いテキストをiPhoneで読みやすく調整 */
+  --color-slate-400: #6b7fa0;
 }
 
 body {
