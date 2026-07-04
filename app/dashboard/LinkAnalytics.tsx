@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Image from "next/image";
 
 type LinkEntry = { linkId: string; label: string; platform: string; count: number };
+
 type PeriodData = { links: LinkEntry[]; total: number; prevTotal: number };
 
 type Props = {
@@ -72,43 +72,19 @@ function LinkRank({ links, total, prevTotal }: PeriodData) {
         {links.slice(0, 5).map((link, i) => {
           const barPct = links[0].count > 0 ? Math.round((link.count / links[0].count) * 100) : 0;
           return (
-            <div key={link.linkId} className="flex items-center gap-2">
-              <span className="text-slate-300 font-bold text-xs w-4 text-right flex-shrink-0">{i + 1}</span>
-              {link.platform !== "bio" ? (
-                <Image
-                  src={`/sns/${link.platform}.png`}
-                  alt={link.label}
-                  width={16}
-                  height={16}
-                  className="object-contain flex-shrink-0"
-                />
-              ) : (
-                <span
-                  className="flex-shrink-0"
+            <div key={link.linkId}>
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-xs text-slate-700 truncate">{link.label}</span>
+                <span className="text-xs font-semibold text-slate-500 ml-2 flex-shrink-0">{link.count}</span>
+              </div>
+              <div className="h-1 rounded-full bg-slate-100 overflow-hidden">
+                <div
+                  className="h-full rounded-full"
                   style={{
-                    width: 16, height: 16,
-                    maskImage: "url(/link-icon.png)",
-                    maskSize: "contain", maskRepeat: "no-repeat", maskPosition: "center",
-                    WebkitMaskImage: "url(/link-icon.png)",
-                    WebkitMaskSize: "contain", WebkitMaskRepeat: "no-repeat", WebkitMaskPosition: "center",
-                    background: "#94a3b8",
+                    width: `${barPct}%`,
+                    background: "linear-gradient(90deg, #F58BCB 0%, #B98AF5 50%, #7DB7FF 100%)",
                   }}
                 />
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-0.5">
-                  <span className="text-xs text-slate-700 truncate">{link.label}</span>
-                  <span className="text-xs font-semibold text-slate-500 ml-2 flex-shrink-0">{link.count}</span>
-                </div>
-                <div className="h-1 rounded-full bg-slate-100 overflow-hidden">
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${barPct}%`,
-                      background: "linear-gradient(90deg, #F58BCB 0%, #B98AF5 50%, #7DB7FF 100%)",
-                    }}
-                  />
-                </div>
               </div>
             </div>
           );
@@ -180,7 +156,7 @@ export default function LinkAnalytics(props: Props) {
   return (
     <div className="glass-card rounded-2xl p-5 relative">
       {isPending && <LoadingOverlay />}
-      <h2 className="text-xs font-bold text-slate-400 mb-3">よく押されたリンク</h2>
+      <h2 className="text-xs font-bold text-slate-400 mb-3">押されたリンク</h2>
 
       {/* Period tabs */}
       <div className="flex gap-1 mb-4 bg-slate-100 rounded-xl p-1">

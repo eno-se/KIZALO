@@ -8,16 +8,32 @@ export default function FeaturedImageCard({
   title,
   caption,
   link,
+  creatorId,
+  blockId,
 }: {
   imageUrl: string;
   title: string | null;
   caption: string | null;
   link: string | null;
+  creatorId?: string;
+  blockId?: string;
 }) {
   const [open, setOpen] = useState(false);
 
   const handleClick = () => {
     if (link) {
+      if (creatorId && blockId) {
+        fetch("/api/link-click", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            creatorId,
+            linkId: blockId,
+            label: title || "画像",
+            platform: "block-image",
+          }),
+        }).catch(() => {});
+      }
       window.open(link, "_blank", "noopener,noreferrer");
     } else {
       setOpen(true);

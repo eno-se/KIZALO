@@ -157,10 +157,12 @@ function BlockTypeIcon({ type, size = 20 }: { type: string; size?: number }) {
 function SortableBlockItem({
   block,
   onDelete,
+  onSaved,
   rankingSettings,
 }: {
   block: Block;
   onDelete: (id: string) => void;
+  onSaved: (id: string, updates: Partial<Block>) => void;
   rankingSettings?: RankingSettings;
 }) {
   const [open, setOpen] = useState(false);
@@ -261,7 +263,7 @@ function SortableBlockItem({
       {open && (
         <div className="px-4 pb-4 border-t border-slate-100">
           <div className="pt-4">
-            <ContentBlockForm block={block} rankingSettings={rankingSettings} />
+            <ContentBlockForm block={block} rankingSettings={rankingSettings} onSaved={onSaved} />
           </div>
         </div>
       )}
@@ -381,10 +383,11 @@ export default function ContentBlockManager({
   };
 
   const handleDelete = (id: string) => {
-    setBlocks((prev) => {
-      const filtered = prev.filter((b) => b.id !== id);
-      return filtered;
-    });
+    setBlocks((prev) => prev.filter((b) => b.id !== id));
+  };
+
+  const handleBlockSaved = (id: string, updates: Partial<Block>) => {
+    setBlocks((prev) => prev.map((b) => (b.id === id ? { ...b, ...updates } : b)));
   };
 
   return (
@@ -398,6 +401,7 @@ export default function ContentBlockManager({
               key={block.id}
               block={block}
               onDelete={handleDelete}
+              onSaved={handleBlockSaved}
               rankingSettings={block.type === "ranking" ? rankingSettings : undefined}
             />
           ))}

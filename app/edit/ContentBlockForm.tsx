@@ -27,20 +27,24 @@ export type RankingSettings = {
   cardOrder: string;
 };
 
+type OnSaved = (id: string, updates: Partial<Block>) => void;
+
 export default function ContentBlockForm({
   block,
   rankingSettings,
+  onSaved,
 }: {
   block: Block;
   rankingSettings?: RankingSettings;
+  onSaved?: OnSaved;
 }) {
   switch (block.type) {
-    case "youtube":    return <YoutubeForm block={block} />;
-    case "image":      return <ImageForm block={block} />;
-    case "text":       return <TextForm block={block} />;
-    case "applemusic": return <AppleMusicForm block={block} />;
-    case "spotify":    return <SpotifyForm block={block} />;
-    case "timetree":   return <TimeTreeForm block={block} />;
+    case "youtube":    return <YoutubeForm block={block} onSaved={onSaved} />;
+    case "image":      return <ImageForm block={block} onSaved={onSaved} />;
+    case "text":       return <TextForm block={block} onSaved={onSaved} />;
+    case "applemusic": return <AppleMusicForm block={block} onSaved={onSaved} />;
+    case "spotify":    return <SpotifyForm block={block} onSaved={onSaved} />;
+    case "timetree":   return <TimeTreeForm block={block} onSaved={onSaved} />;
     case "ranking":    return <RankingForm settings={rankingSettings} />;
     default:           return null;
   }
@@ -118,7 +122,7 @@ function SaveButton({
 
 // ── YouTube ──────────────────────────────────────────────────────────
 
-function YoutubeForm({ block }: { block: Block }) {
+function YoutubeForm({ block, onSaved }: { block: Block; onSaved?: OnSaved }) {
   const [url, setUrl] = useState(block.url ?? "");
   const [title, setTitle] = useState(block.title ?? "");
   const [caption, setCaption] = useState(block.caption ?? "");
@@ -143,7 +147,9 @@ function YoutubeForm({ block }: { block: Block }) {
         caption: caption.trim() || null,
       });
       if (res?.error) { setError(res.error); return; }
-      setSavedUrl(url.trim()); setSavedTitle(title.trim()); setSavedCaption(caption.trim());
+      const u = url.trim(); const t = title.trim(); const c = caption.trim();
+      setSavedUrl(u); setSavedTitle(t); setSavedCaption(c);
+      onSaved?.(block.id, { url: u || null, title: t || null, caption: c || null });
       setSaved(true); setTimeout(() => setSaved(false), 2500);
     });
   };
@@ -182,7 +188,7 @@ function YoutubeForm({ block }: { block: Block }) {
 
 // ── 画像 ──────────────────────────────────────────────────────────────
 
-function ImageForm({ block }: { block: Block }) {
+function ImageForm({ block, onSaved }: { block: Block; onSaved?: OnSaved }) {
   const [imageUrl, setImageUrl] = useState(block.imageUrl ?? "");
   const [title, setTitle] = useState(block.title ?? "");
   const [caption, setCaption] = useState(block.caption ?? "");
@@ -237,8 +243,9 @@ function ImageForm({ block }: { block: Block }) {
         link: link.trim() || null,
       });
       if (res?.error) { setError(res.error); return; }
-      setSavedImageUrl(imageUrl); setSavedTitle(title.trim());
-      setSavedCaption(caption.trim()); setSavedLink(link.trim());
+      const t = title.trim(); const c = caption.trim(); const l = link.trim();
+      setSavedImageUrl(imageUrl); setSavedTitle(t); setSavedCaption(c); setSavedLink(l);
+      onSaved?.(block.id, { imageUrl: imageUrl || null, title: t || null, caption: c || null, link: l || null });
       setSaved(true); setTimeout(() => setSaved(false), 2500);
     });
   };
@@ -297,7 +304,7 @@ function ImageForm({ block }: { block: Block }) {
 
 // ── テキスト ──────────────────────────────────────────────────────────
 
-function TextForm({ block }: { block: Block }) {
+function TextForm({ block, onSaved }: { block: Block; onSaved?: OnSaved }) {
   const [title, setTitle] = useState(block.title ?? "");
   const [caption, setCaption] = useState(block.caption ?? "");
   const [savedTitle, setSavedTitle] = useState(block.title ?? "");
@@ -316,7 +323,9 @@ function TextForm({ block }: { block: Block }) {
         caption: caption.trim() || null,
       });
       if (res?.error) { setError(res.error); return; }
-      setSavedTitle(title.trim()); setSavedCaption(caption.trim());
+      const t = title.trim(); const c = caption.trim();
+      setSavedTitle(t); setSavedCaption(c);
+      onSaved?.(block.id, { title: t || null, caption: c || null });
       setSaved(true); setTimeout(() => setSaved(false), 2500);
     });
   };
@@ -333,7 +342,7 @@ function TextForm({ block }: { block: Block }) {
 
 // ── Apple Music ────────────────────────────────────────────────────────
 
-function AppleMusicForm({ block }: { block: Block }) {
+function AppleMusicForm({ block, onSaved }: { block: Block; onSaved?: OnSaved }) {
   const [url, setUrl] = useState(block.url ?? "");
   const [title, setTitle] = useState(block.title ?? "");
   const [caption, setCaption] = useState(block.caption ?? "");
@@ -359,7 +368,9 @@ function AppleMusicForm({ block }: { block: Block }) {
         caption: caption.trim() || null,
       });
       if (res?.error) { setError(res.error); return; }
-      setSavedUrl(url.trim()); setSavedTitle(title.trim()); setSavedCaption(caption.trim());
+      const u = url.trim(); const t = title.trim(); const c = caption.trim();
+      setSavedUrl(u); setSavedTitle(t); setSavedCaption(c);
+      onSaved?.(block.id, { url: u || null, title: t || null, caption: c || null });
       setSaved(true); setTimeout(() => setSaved(false), 2500);
     });
   };
@@ -404,7 +415,7 @@ function AppleMusicForm({ block }: { block: Block }) {
 
 // ── Spotify ────────────────────────────────────────────────────────────
 
-function SpotifyForm({ block }: { block: Block }) {
+function SpotifyForm({ block, onSaved }: { block: Block; onSaved?: OnSaved }) {
   const [url, setUrl] = useState(block.url ?? "");
   const [title, setTitle] = useState(block.title ?? "");
   const [caption, setCaption] = useState(block.caption ?? "");
@@ -430,7 +441,9 @@ function SpotifyForm({ block }: { block: Block }) {
         caption: caption.trim() || null,
       });
       if (res?.error) { setError(res.error); return; }
-      setSavedUrl(url.trim()); setSavedTitle(title.trim()); setSavedCaption(caption.trim());
+      const u = url.trim(); const t = title.trim(); const c = caption.trim();
+      setSavedUrl(u); setSavedTitle(t); setSavedCaption(c);
+      onSaved?.(block.id, { url: u || null, title: t || null, caption: c || null });
       setSaved(true); setTimeout(() => setSaved(false), 2500);
     });
   };
@@ -473,7 +486,7 @@ function SpotifyForm({ block }: { block: Block }) {
 
 // ── TimeTree ────────────────────────────────────────────────────────────
 
-function TimeTreeForm({ block }: { block: Block }) {
+function TimeTreeForm({ block, onSaved }: { block: Block; onSaved?: OnSaved }) {
   const [url, setUrl] = useState(block.url ?? "");
   const [title, setTitle] = useState(block.title ?? "");
   const [caption, setCaption] = useState(block.caption ?? "");
@@ -499,7 +512,9 @@ function TimeTreeForm({ block }: { block: Block }) {
         caption: caption.trim() || null,
       });
       if (res?.error) { setError(res.error); return; }
-      setSavedUrl(url.trim()); setSavedTitle(title.trim()); setSavedCaption(caption.trim());
+      const u = url.trim(); const t = title.trim(); const c = caption.trim();
+      setSavedUrl(u); setSavedTitle(t); setSavedCaption(c);
+      onSaved?.(block.id, { url: u || null, title: t || null, caption: c || null });
       setSaved(true); setTimeout(() => setSaved(false), 2500);
     });
   };

@@ -514,35 +514,22 @@ function LinkRankMini({ links }: { links: LinkEntry[] }) {
   const max = Math.max(...links.map((l) => l.count), 1);
   return (
     <>
-      <div className="text-xs text-slate-400 mb-2">よく押されたリンク</div>
+      <div className="text-xs text-slate-400 mb-2">押されたリンク</div>
       {links.length === 0 ? (
         <p className="text-xs text-slate-400">まだデータがありません</p>
       ) : (
         <div className="space-y-2">
           {links.slice(0, 5).map((link, i) => (
-            <div key={`${link.linkId}-${link.platform}-${i}`} className="flex items-center gap-2">
-              <span className="text-slate-200 font-bold flex-shrink-0" style={{ fontSize: "0.6rem", width: 10, textAlign: "right" }}>{i + 1}</span>
-              {link.platform !== "bio" ? (
-                <Image src={`/sns/${link.platform}.png`} alt={link.label} width={14} height={14} className="object-contain flex-shrink-0" />
-              ) : (
-                <span className="flex-shrink-0" style={{
-                  width: 14, height: 14,
-                  maskImage: "url(/link-icon.png)", maskSize: "contain", maskRepeat: "no-repeat", maskPosition: "center",
-                  WebkitMaskImage: "url(/link-icon.png)", WebkitMaskSize: "contain", WebkitMaskRepeat: "no-repeat", WebkitMaskPosition: "center",
-                  background: "#94a3b8", display: "inline-block",
+            <div key={`${link.linkId}-${link.platform}-${i}`}>
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-xs text-slate-600 truncate">{link.label}</span>
+                <span className="text-xs font-semibold text-slate-400 ml-1 flex-shrink-0">{link.count}</span>
+              </div>
+              <div className="h-1 rounded-full overflow-hidden" style={{ background: "#f1f5f9" }}>
+                <div className="h-full rounded-full" style={{
+                  width: `${Math.round((link.count / max) * 100)}%`,
+                  background: "linear-gradient(90deg, #F58BCB 0%, #B98AF5 50%, #7DB7FF 100%)",
                 }} />
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-0.5">
-                  <span className="text-xs text-slate-600 truncate">{link.label}</span>
-                  <span className="text-xs font-semibold text-slate-400 ml-1 flex-shrink-0">{link.count}</span>
-                </div>
-                <div className="h-1 rounded-full overflow-hidden" style={{ background: "#f1f5f9" }}>
-                  <div className="h-full rounded-full" style={{
-                    width: `${Math.round((link.count / max) * 100)}%`,
-                    background: "linear-gradient(90deg, #F58BCB 0%, #B98AF5 50%, #7DB7FF 100%)",
-                  }} />
-                </div>
               </div>
             </div>
           ))}

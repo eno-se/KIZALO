@@ -360,6 +360,8 @@ export default async function CreatorPage({ params }: { params: Promise<{ slug: 
                 title={block.title ?? null}
                 caption={block.caption ?? null}
                 link={block.link ?? null}
+                creatorId={creator.id}
+                blockId={block.id}
               />
             </div>
           );
