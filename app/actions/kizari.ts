@@ -17,8 +17,18 @@ export async function kizaru(creatorId: string, slug: string) {
     return { error: "リクエストが多すぎます。しばらくお待ちください。" };
   }
 
-  const today = getJstDateString();
   const userId = session.user.id;
+  if (session.user.isSuspended) return { error: "アカウントが利用停止されています" };
+
+  const userRecord = await db.user.findUnique({
+    where: { id: userId },
+    select: { isBanned: true, isSuspended: true },
+  });
+  if (userRecord?.isBanned || userRecord?.isSuspended) {
+    return { error: "アカウントが利用停止されています" };
+  }
+
+  const today = getJstDateString();
 
   const existing = await db.kizari.findUnique({
     where: { fanId_creatorId_date: { fanId: userId, creatorId, date: today } },

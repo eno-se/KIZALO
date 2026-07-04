@@ -14,8 +14,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     session({ session, user }) {
+      const u = user as { displayName?: string | null; isBanned?: boolean; isSuspended?: boolean };
       session.user.id = user.id;
-      session.user.displayName = (user as { displayName?: string | null }).displayName ?? null;
+      session.user.displayName = u.displayName ?? null;
+      session.user.isSuspended = !!(u.isBanned || u.isSuspended);
       return session;
     },
   },
