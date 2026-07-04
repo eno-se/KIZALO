@@ -1,10 +1,13 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import EditProfileForm from "./EditProfileForm";
+import EditProfileIdentity from "./EditProfileIdentity";
+import EditProfileBio from "./EditProfileBio";
+import EditSlug from "./EditSlug";
 import EditSocialLinks from "./EditSocialLinks";
-import CardVisibilityForm from "./CardVisibilityForm";
 import ButtonVisibilityForm from "./ButtonVisibilityForm";
+import CollapsibleCard from "./CollapsibleCard";
+import ContentBlockManager from "./ContentBlockManager";
 
 export default async function EditPage() {
   const session = await auth();
@@ -14,7 +17,10 @@ export default async function EditPage() {
     where: { id: session.user.id },
     include: {
       creatorProfile: {
-        include: { socialLinks: { orderBy: { order: "asc" } } },
+        include: {
+          socialLinks: { orderBy: { order: "asc" } },
+          contentBlocks: { orderBy: { order: "asc" } },
+        },
       },
     },
   });
@@ -25,8 +31,12 @@ export default async function EditPage() {
   const profile = user.creatorProfile;
   if (!profile) redirect("/setup");
 
+  const snsSummary = profile.socialLinks.length > 0
+    ? `${profile.socialLinks.length}件登録済み`
+    : "未設定";
+
   return (
-    <div className="min-h-screen px-4 py-8 max-w-lg mx-auto">
+    <div className="min-h-screen px-4 py-8 pb-32 max-w-lg mx-auto">
       {/* ヘッダー */}
       <div className="flex items-center gap-3 mb-6">
         <a
@@ -39,51 +49,82 @@ export default async function EditPage() {
         <h1 className="text-xl font-bold text-slate-800">プロフィール編集</h1>
       </div>
 
-      <div className="space-y-5">
-        {/* 基本情報 */}
-        <div className="glass-card rounded-2xl p-5">
-          <h2 className="text-xs font-bold text-slate-400 mb-4">基本情報</h2>
-          <EditProfileForm
+      <div className="space-y-3">
+        {/* 基本設定セクション区切り */}
+        <div className="flex items-center gap-3 pt-2">
+          <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, #F58BCB, #B98AF5, #7DB7FF)" }} />
+          <span className="text-xs font-bold brand-gradient-text tracking-widest">基本設定</span>
+          <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, #F58BCB, #B98AF5, #7DB7FF)" }} />
+        </div>
+
+        <CollapsibleCard title="SNSリンク" summary={snsSummary}>
+          <EditSocialLinks socialLinks={profile.socialLinks} />
+        </CollapsibleCard>
+
+        <CollapsibleCard title="アイコン・表示名" summary={profile.displayName}>
+          <EditProfileIdentity
             displayName={profile.displayName}
+            iconUrl={profile.iconUrl ?? null}
+          />
+        </CollapsibleCard>
+
+        <CollapsibleCard title="ID" summary={`@${profile.slug}`}>
+          <EditSlug slug={profile.slug} slugChangedAt={profile.slugChangedAt} />
+        </CollapsibleCard>
+
+        <CollapsibleCard
+          title="自己紹介"
+          summary={profile.bio ? profile.bio.slice(0, 40) + (profile.bio.length > 40 ? "…" : "") : "未設定"}
+        >
+          <EditProfileBio
             bio={profile.bio ?? ""}
             bioLink={profile.bioLink ?? ""}
             bioLinkLabel={profile.bioLinkLabel ?? ""}
-            iconUrl={profile.iconUrl ?? null}
-            slug={profile.slug}
-            slugChangedAt={profile.slugChangedAt}
           />
-        </div>
+        </CollapsibleCard>
 
-        {/* SNSリンク */}
-        <div className="glass-card rounded-2xl p-5">
-          <h2 className="text-xs font-bold text-slate-400 mb-4">SNSリンク</h2>
-          <EditSocialLinks socialLinks={profile.socialLinks} />
-        </div>
-
-        {/* ボタン表示設定 */}
-        <div className="glass-card rounded-2xl p-5">
-          <h2 className="text-xs font-bold text-slate-400 mb-4">ボタン表示設定</h2>
+        <CollapsibleCard
+          title="ボタン表示設定"
+          summary={profile.showKizaruButton ? "刻むボタン：表示中" : "刻むボタン：非表示"}
+        >
           <ButtonVisibilityForm showKizaruButton={profile.showKizaruButton} />
+        </CollapsibleCard>
+
+        {/* コンテンツセクション区切り */}
+        <div className="flex items-center gap-3 pt-2">
+          <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, #F58BCB, #B98AF5, #7DB7FF)" }} />
+          <span className="text-xs font-bold brand-gradient-text tracking-widest">コンテンツ</span>
+          <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, #F58BCB, #B98AF5, #7DB7FF)" }} />
         </div>
 
-        {/* カード表示設定 */}
-        <div className="glass-card rounded-2xl p-5">
-          <h2 className="text-xs font-bold text-slate-400 mb-4">カード表示設定</h2>
-          <CardVisibilityForm
-            showFastestCard={profile.showFastestCard}
-            showRandomCard={profile.showRandomCard}
-            showMostCard={profile.showMostCard}
-            showStreakCard={profile.showStreakCard}
-            cardOrder={profile.cardOrder}
-          />
-        </div>
+        <ContentBlockManager
+          initialBlocks={profile.contentBlocks.map((b) => ({
+            id: b.id,
+            type: b.type,
+            title: b.title,
+            caption: b.caption,
+            url: b.url,
+            imageUrl: b.imageUrl,
+            link: b.link,
+          }))}
+          rankingSettings={{
+            showFastestCard: profile.showFastestCard,
+            showRandomCard: profile.showRandomCard,
+            showMostCard: profile.showMostCard,
+            showStreakCard: profile.showStreakCard,
+            cardOrder: profile.cardOrder,
+          }}
+        />
 
-        {/* プレビュー */}
+      </div>
+
+      {/* 固定プレビューボタン */}
+      <div className="fixed bottom-16 left-0 right-0 z-30 flex justify-center pb-[env(safe-area-inset-bottom)]">
         <a
           href={`/${profile.slug}`}
-          className="glass-btn-secondary flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-semibold"
+          className="glass-btn-primary px-10 py-3.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 shadow-lg"
         >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
             <circle cx="12" cy="12" r="3" />
           </svg>

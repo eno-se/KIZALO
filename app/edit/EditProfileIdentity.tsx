@@ -4,16 +4,8 @@ import { useState, useTransition, useRef, useCallback } from "react";
 import Image from "next/image";
 import Cropper from "react-easy-crop";
 import type { Area } from "react-easy-crop";
-import { updateCreatorProfile } from "@/app/actions/creator";
+import { updateProfileIdentity } from "@/app/actions/creator";
 import { validateDisplayName } from "@/lib/sns-validation";
-
-type Props = {
-  displayName: string;
-  bio: string;
-  bioLink: string;
-  bioLinkLabel: string;
-  iconUrl: string | null;
-};
 
 async function getCroppedBlob(imageSrc: string, cropArea: Area): Promise<Blob> {
   const img = await new Promise<HTMLImageElement>((resolve) => {
@@ -30,23 +22,25 @@ async function getCroppedBlob(imageSrc: string, cropArea: Area): Promise<Blob> {
   return new Promise((resolve) => canvas.toBlob((b) => resolve(b!), "image/jpeg", 0.9));
 }
 
-export default function EditProfileForm({ displayName, bio, bioLink, bioLinkLabel, iconUrl }: Props) {
+export default function EditProfileIdentity({
+  displayName,
+  iconUrl,
+}: {
+  displayName: string;
+  iconUrl: string | null;
+}) {
   const [name, setName] = useState(displayName);
-  const [bioText, setBioText] = useState(bio);
-  const [bioLinkText, setBioLinkText] = useState(bioLink);
-  const [bioLinkLabelText, setBioLinkLabelText] = useState(bioLinkLabel);
   const [currentIconUrl, setCurrentIconUrl] = useState<string | null>(iconUrl);
 
-  // クロップ用
+  const hasChanges = name.trim() !== displayName || currentIconUrl !== iconUrl;
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedArea, setCroppedArea] = useState<Area | null>(null);
-
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -79,11 +73,7 @@ export default function EditProfileForm({ displayName, bio, bioLink, bioLinkLabe
         throw new Error(err.error ?? `HTTP ${res.status}`);
       }
       const { presignedUrl, publicUrl } = await res.json();
-      const putRes = await fetch(presignedUrl, {
-        method: "PUT",
-        headers: { "Content-Type": "image/jpeg" },
-        body: blob,
-      });
+      const putRes = await fetch(presignedUrl, { method: "PUT", headers: { "Content-Type": "image/jpeg" }, body: blob });
       if (!putRes.ok) throw new Error(`R2 PUT failed: ${putRes.status}`);
       setCurrentIconUrl(publicUrl);
       setCropSrc(null);
@@ -100,13 +90,8 @@ export default function EditProfileForm({ displayName, bio, bioLink, bioLinkLabe
     if (nameErr) { setNameError(nameErr); return; }
     setNameError(null);
     startTransition(async () => {
-      await updateCreatorProfile({
-        displayName: name.trim(),
-        bio: bioText,
-        bioLink: bioLinkText.trim(),
-        bioLinkLabel: bioLinkLabelText.trim(),
-        iconUrl: currentIconUrl,
-      });
+      const res = await updateProfileIdentity(name.trim(), currentIconUrl);
+      if (res?.error) { setNameError(res.error); return; }
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     });
@@ -120,11 +105,7 @@ export default function EditProfileForm({ displayName, bio, bioLink, bioLinkLabe
           <div className="flex items-center justify-between px-4 py-3 text-white">
             <button onClick={() => setCropSrc(null)} className="text-sm text-white/70">キャンセル</button>
             <p className="text-sm font-semibold">位置を調整</p>
-            <button
-              onClick={handleCropConfirm}
-              disabled={uploading}
-              className="text-sm font-bold text-[#F58BCB]"
-            >
+            <button onClick={handleCropConfirm} disabled={uploading} className="text-sm font-bold text-[#F58BCB]">
               {uploading ? "処理中..." : "決定"}
             </button>
           </div>
@@ -142,19 +123,9 @@ export default function EditProfileForm({ displayName, bio, bioLink, bioLinkLabe
             />
           </div>
           <div className="px-6 py-4 bg-black/60">
-            {uploadError && (
-              <p className="text-xs text-red-400 text-center mb-2 break-all">{uploadError}</p>
-            )}
+            {uploadError && <p className="text-xs text-red-400 text-center mb-2 break-all">{uploadError}</p>}
             <p className="text-xs text-white/50 text-center mb-2">ピンチまたはスライダーでズーム</p>
-            <input
-              type="range"
-              min={1}
-              max={3}
-              step={0.05}
-              value={zoom}
-              onChange={(e) => setZoom(Number(e.target.value))}
-              className="w-full accent-pink-400"
-            />
+            <input type="range" min={1} max={3} step={0.05} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} className="w-full accent-pink-400" />
           </div>
         </div>
       )}
@@ -162,22 +133,13 @@ export default function EditProfileForm({ displayName, bio, bioLink, bioLinkLabe
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* アイコン */}
         <div className="flex flex-col items-center gap-2">
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="relative group"
-          >
-            <div
-              className="rounded-full p-[3px]"
-              style={{ background: "linear-gradient(135deg, #F58BCB 0%, #B98AF5 50%, #7DB7FF 100%)" }}
-            >
+          <button type="button" onClick={() => fileInputRef.current?.click()} className="relative group">
+            <div className="rounded-full p-[3px]" style={{ background: "linear-gradient(135deg, #F58BCB 0%, #B98AF5 50%, #7DB7FF 100%)" }}>
               <div className="rounded-full bg-white p-[2px]" style={{ width: 84, height: 84 }}>
                 <div className="rounded-full overflow-hidden bg-pink-50 flex items-center justify-center" style={{ width: 80, height: 80 }}>
-                  {currentIconUrl ? (
-                    <Image src={currentIconUrl} alt={name} width={80} height={80} className="object-cover" style={{ width: 80, height: 80 }} unoptimized />
-                  ) : (
-                    <span className="text-2xl font-bold text-[#F58BCB]">{name[0] ?? "?"}</span>
-                  )}
+                  {currentIconUrl
+                    ? <Image src={currentIconUrl} alt={name} width={80} height={80} className="object-cover" style={{ width: 80, height: 80 }} unoptimized />
+                    : <span className="text-2xl font-bold text-[#F58BCB]">{name[0] ?? "?"}</span>}
                 </div>
               </div>
             </div>
@@ -191,11 +153,7 @@ export default function EditProfileForm({ displayName, bio, bioLink, bioLinkLabe
           </button>
           <p className="text-xs text-slate-400">タップして画像を変更</p>
           {currentIconUrl && (
-            <button
-              type="button"
-              onClick={() => setCurrentIconUrl(null)}
-              className="text-xs text-red-400 hover:text-red-500 transition-colors"
-            >
+            <button type="button" onClick={() => setCurrentIconUrl(null)} className="text-xs text-red-400 hover:text-red-500 transition-colors">
               画像を削除する
             </button>
           )}
@@ -216,47 +174,13 @@ export default function EditProfileForm({ displayName, bio, bioLink, bioLinkLabe
           {nameError && <p className="text-xs text-red-500 mt-1">{nameError}</p>}
         </div>
 
-        {/* 自己紹介 */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">一言</label>
-          <textarea
-            value={bioText}
-            onChange={(e) => setBioText(e.target.value)}
-            rows={4}
-            maxLength={200}
-            placeholder="一言を入力..."
-            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white/80 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-pink-200"
-          />
-          <p className="text-right text-xs text-slate-300 mt-1">{bioText.length}/200</p>
-        </div>
-
-        {/* 一言リンク */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">一言の下のリンク</label>
-          <div className="flex flex-col gap-2">
-            <input
-              type="text"
-              value={bioLinkLabelText}
-              onChange={(e) => setBioLinkLabelText(e.target.value)}
-              placeholder="タイトル（例：グッズはこちら）"
-              maxLength={30}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white/80 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200"
-            />
-            <input
-              type="url"
-              value={bioLinkText}
-              onChange={(e) => setBioLinkText(e.target.value)}
-              placeholder="https://..."
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white/80 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200"
-            />
-          </div>
-          <p className="text-xs text-slate-400 mt-2">タイトルを設定するとリンクにその文字が表示されます。未設定の場合はURLがそのまま表示されます。</p>
-        </div>
-
+        {hasChanges && !saved && (
+          <p className="text-xs text-center brand-gradient-text font-semibold">保存するボタンを押すまで反映されません</p>
+        )}
         <button
           type="submit"
-          disabled={isPending || !name.trim()}
-          className="glass-btn-primary w-full py-3 rounded-xl font-semibold text-sm disabled:opacity-50 cursor-pointer"
+          disabled={isPending || !name.trim() || !hasChanges}
+          className="glass-btn-primary w-full py-2.5 rounded-xl font-semibold text-sm disabled:opacity-50 cursor-pointer"
         >
           {saved ? "保存しました ✓" : isPending ? "保存中..." : "保存する"}
         </button>

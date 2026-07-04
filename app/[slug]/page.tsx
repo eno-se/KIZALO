@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { notFound, redirect } from "next/navigation";
 import { getJstDateString } from "@/lib/jst";
+import { extractYoutubeVideoId } from "@/lib/youtube";
 import KizaruSection from "./KizaruSection";
 import KizaruCardWrapper from "./KizaruCardWrapper";
 import TrackedLink from "./TrackedLink";
@@ -10,6 +11,10 @@ import FanNameMarquee from "@/app/components/FanNameMarquee";
 import ShareButton from "./ShareButton";
 import ReportButton from "./ReportButton";
 import Image from "next/image";
+import FeaturedImageCard from "./FeaturedImageCard";
+import { extractAppleMusicEmbedUrl, getAppleMusicEmbedHeight } from "@/lib/apple-music";
+import { extractSpotifyEmbedUrl, getSpotifyEmbedHeight } from "@/lib/spotify";
+import { extractTimeTreeEmbedUrl } from "@/lib/timetree";
 import type { Metadata } from "next";
 
 export async function generateMetadata(
@@ -67,6 +72,7 @@ export default async function CreatorPage({ params }: { params: Promise<{ slug: 
     where: { slug },
     include: {
       socialLinks: { orderBy: { order: "asc" } },
+      contentBlocks: { orderBy: { order: "asc" } },
       kizaris: {
         where: { date: getJstDateString() },
         include: { fan: { include: { creatorProfile: { select: { iconUrl: true } } } } },
@@ -203,35 +209,23 @@ export default async function CreatorPage({ params }: { params: Promise<{ slug: 
               className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-full glass-btn-secondary text-xs font-semibold"
             >
               <span
-                className="flex-shrink-0"
                 style={{
-                  width: 14,
-                  height: 14,
-                  maskImage: "url(/link-icon.png)",
-                  maskSize: "contain",
-                  maskRepeat: "no-repeat",
-                  maskPosition: "center",
-                  WebkitMaskImage: "url(/link-icon.png)",
-                  WebkitMaskSize: "contain",
-                  WebkitMaskRepeat: "no-repeat",
-                  WebkitMaskPosition: "center",
-                  background: "#94a3b8",
-                }}
-              />
-              <span
-                style={{
-                  background: "#94a3b8",
+                  background: "linear-gradient(135deg, #F58BCB 0%, #B98AF5 50%, #7DB7FF 100%)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
+                  fontSize: 14,
+                  lineHeight: 1,
                 }}
               >
+                🔗
+              </span>
+              <span className="brand-gradient-text">
                 {creator.bioLinkLabel || creator.bioLink.replace(/^https?:\/\//, "")}
               </span>
             </TrackedLink>
           )}
         </div>
-
       </div>
 
       <KizaruSection
@@ -324,180 +318,314 @@ export default async function CreatorPage({ params }: { params: Promise<{ slug: 
         </div>
         </KizaruCardWrapper>
         )}
-        {/* カード（cardOrderに従って描画） */}
-        {(creator.cardOrder ?? "fastest,random,kizaki").split(",").map((key) => {
-        if (key === "fastest") return (
-          <KizaruCardWrapper key="fastest">
-          <div className="glass-card rounded-2xl pt-2 pb-4 px-5">
-            <h2 className="text-xs font-bold brand-gradient-text text-center mb-3 flex items-center justify-center gap-1.5">
-              <span className="sparkle" />最速<span className="sparkle" />
-            </h2>
-            {!creator.showFastestCard ? (
-              <div className="flex justify-center py-2">
-                <span style={{ display: "inline-block", width: 32, height: 32, maskImage: "url(/hidden-icon.png)", maskSize: "contain", maskRepeat: "no-repeat", maskPosition: "center", WebkitMaskImage: "url(/hidden-icon.png)", WebkitMaskSize: "contain", WebkitMaskRepeat: "no-repeat", WebkitMaskPosition: "center", background: "#94a3b8" }} />
-              </div>
-            ) : fastestKizaris.length === 0 ? (
-              <div className="text-center py-3">
-                <p className="text-slate-400 text-xs">まだ誰も刻っていません</p>
-                <p className="text-xs font-bold brand-gradient-text mt-1">今日最初に刻む人になろう！</p>
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-3 gap-2">
-                  {fastestKizaris.map((k) => {
-                    const name = k.fan.displayName ?? k.fan.name ?? "名無し";
-                    const iconUrl = k.fan.creatorProfile?.iconUrl;
-                    const isMe = k.fanId === session?.user.id;
-                    return (
-                      <div key={k.id} className="flex items-center gap-2">
-                        <div className="rounded-full overflow-hidden bg-pink-50 flex-shrink-0 flex items-center justify-center" style={{ width: 28, height: 28 }}>
-                          {iconUrl
-                            ? <Image src={iconUrl} alt={name} width={28} height={28} className="object-cover" style={{ width: 28, height: 28 }} unoptimized />
-                            : <span className="text-xs font-bold text-[#F58BCB]">{name[0]}</span>}
-                        </div>
-                        <FanNameMarquee name={name} className={`text-xs ${isMe ? "brand-gradient-text font-bold" : "text-slate-600"}`} />
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="text-center mt-5">
-                  <a href={`/${slug}/kizaris`} className="inline-flex items-center gap-1 text-xs brand-gradient-text font-bold">もっと見る<span className="more-icon" /></a>
-                </div>
-              </>
-            )}
-          </div>
-          </KizaruCardWrapper>
-        );
+      </KizaruSection>
 
-        if (key === "random") return (
-          <KizaruCardWrapper key="random">
-          <div className="glass-card rounded-2xl pt-2 pb-4 px-5">
-            <h2 className="text-xs font-bold brand-gradient-text text-center mb-1 flex items-center justify-center gap-1.5">
-              <span className="sparkle" />ランダム<span className="sparkle" />
-            </h2>
-            {!creator.showRandomCard ? (
-              <div className="flex justify-center py-2">
-                <span style={{ display: "inline-block", width: 32, height: 32, maskImage: "url(/hidden-icon.png)", maskSize: "contain", maskRepeat: "no-repeat", maskPosition: "center", WebkitMaskImage: "url(/hidden-icon.png)", WebkitMaskSize: "contain", WebkitMaskRepeat: "no-repeat", WebkitMaskPosition: "center", background: "#94a3b8" }} />
-              </div>
-            ) : randomKizaris.length === 0 ? (
-              <div className="text-center py-3">
-                <p className="text-slate-400 text-xs">まだ誰も刻っていません</p>
-                <p className="text-xs font-bold brand-gradient-text mt-1">今日最初に刻む人になろう！</p>
-              </div>
-            ) : (
-              <>
-                <p className="text-center text-slate-400 mb-3" style={{ fontSize: "0.6rem" }}>ランダムで{randomKizaris.length}名表示中！</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {randomKizaris.map((k) => {
-                    const name = k.fan.displayName ?? k.fan.name ?? "名無し";
-                    const iconUrl = k.fan.creatorProfile?.iconUrl;
-                    const isMe = k.fanId === session?.user.id;
-                    return (
-                      <div key={k.id} className="flex items-center gap-2">
-                        <div className="rounded-full overflow-hidden bg-pink-50 flex-shrink-0 flex items-center justify-center" style={{ width: 28, height: 28 }}>
-                          {iconUrl
-                            ? <Image src={iconUrl} alt={name} width={28} height={28} className="object-cover" style={{ width: 28, height: 28 }} unoptimized />
-                            : <span className="text-xs font-bold text-[#F58BCB]">{name[0]}</span>}
-                        </div>
-                        <FanNameMarquee name={name} className={`text-xs ${isMe ? "brand-gradient-text font-bold" : "text-slate-600"}`} />
-                      </div>
-                    );
-                  })}
+      {/* コンテンツブロック */}
+      {creator.contentBlocks.map((block) => {
+        if (block.type === "youtube") {
+          const videoId = extractYoutubeVideoId(block.url ?? "");
+          if (!videoId) return null;
+          return (
+            <div key={block.id} className="w-full max-w-lg mx-auto px-4 mt-4 mb-2">
+              <div className="glass-card rounded-2xl overflow-hidden">
+                {block.title && (
+                  <h2 className="relative z-[1] text-xs font-bold brand-gradient-text text-center pt-4 pb-3 flex items-center justify-center gap-1.5">
+                    <span className="sparkle" />{block.title}<span className="sparkle" />
+                  </h2>
+                )}
+                <div className="relative z-[1] w-full" style={{ aspectRatio: "16/9" }}>
+                  <iframe
+                    src={`https://www.youtube-nocookie.com/embed/${videoId}`}
+                    title="YouTube video"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="absolute inset-0 w-full h-full"
+                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+                  />
                 </div>
-                <div className="text-center mt-5">
-                  <a href={`/${slug}/kizaris`} className="inline-flex items-center gap-1 text-xs brand-gradient-text font-bold">もっと見る<span className="more-icon" /></a>
+                {block.caption && (
+                  <p className="relative z-[1] px-4 py-3 text-xs text-slate-600 whitespace-pre-wrap leading-relaxed">{block.caption}</p>
+                )}
+              </div>
+            </div>
+          );
+        }
+
+        if (block.type === "image") {
+          if (!block.imageUrl) return null;
+          return (
+            <div key={block.id} className="w-full max-w-lg mx-auto px-4 mt-4 mb-2">
+              <FeaturedImageCard
+                imageUrl={block.imageUrl}
+                title={block.title ?? null}
+                caption={block.caption ?? null}
+                link={block.link ?? null}
+              />
+            </div>
+          );
+        }
+
+        if (block.type === "text") {
+          if (!block.title && !block.caption) return null;
+          return (
+            <div key={block.id} className="w-full max-w-lg mx-auto px-4 mt-4 mb-2">
+              <div className="glass-card rounded-2xl px-5 py-4">
+                {block.title && (
+                  <h2 className="relative z-[1] text-xs font-bold brand-gradient-text text-center mb-3 flex items-center justify-center gap-1.5">
+                    <span className="sparkle" />{block.title}<span className="sparkle" />
+                  </h2>
+                )}
+                {block.caption && (
+                  <p className="relative z-[1] text-xs text-slate-600 whitespace-pre-wrap leading-relaxed">{block.caption}</p>
+                )}
+              </div>
+            </div>
+          );
+        }
+
+        if (block.type === "applemusic") {
+          const embedUrl = extractAppleMusicEmbedUrl(block.url ?? "");
+          if (!embedUrl) return null;
+          return (
+            <div key={block.id} className="w-full max-w-lg mx-auto px-4 mt-4 mb-2">
+              <div className="glass-card rounded-2xl overflow-hidden">
+                {block.title && (
+                  <h2 className="relative z-[1] text-xs font-bold brand-gradient-text text-center pt-4 pb-3 flex items-center justify-center gap-1.5">
+                    <span className="sparkle" />{block.title}<span className="sparkle" />
+                  </h2>
+                )}
+                <div className="relative z-[1]">
+                  <iframe
+                    src={embedUrl}
+                    height={getAppleMusicEmbedHeight(embedUrl)}
+                    allow="autoplay *; encrypted-media *; fullscreen *"
+                    sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation"
+                    className="w-full border-0"
+                    title="Apple Music"
+                  />
                 </div>
-              </>
-            )}
-          </div>
-          </KizaruCardWrapper>
-        );
+                {block.caption && (
+                  <p className="relative z-[1] px-4 py-3 text-xs text-slate-600 whitespace-pre-wrap leading-relaxed">{block.caption}</p>
+                )}
+              </div>
+            </div>
+          );
+        }
 
-        if (key === "most") return (
-          <KizaruCardWrapper key="most">
-          <div className="glass-card rounded-2xl pt-2 pb-4 px-5">
-            <h2 className="text-xs font-bold brand-gradient-text text-center mb-3 flex items-center justify-center gap-1.5">
-              <span className="sparkle" />歴代最多<span className="sparkle" />
-            </h2>
-            {!creator.showMostCard ? (
-              <div className="flex justify-center py-2">
-                <span style={{ display: "inline-block", width: 32, height: 32, maskImage: "url(/hidden-icon.png)", maskSize: "contain", maskRepeat: "no-repeat", maskPosition: "center", WebkitMaskImage: "url(/hidden-icon.png)", WebkitMaskSize: "contain", WebkitMaskRepeat: "no-repeat", WebkitMaskPosition: "center", background: "#94a3b8" }} />
+        if (block.type === "spotify") {
+          const embedUrl = extractSpotifyEmbedUrl(block.url ?? "");
+          if (!embedUrl) return null;
+          return (
+            <div key={block.id} className="w-full max-w-lg mx-auto px-4 mt-4 mb-2">
+              <div className="glass-card rounded-2xl overflow-hidden">
+                {block.title && (
+                  <h2 className="relative z-[1] text-xs font-bold brand-gradient-text text-center pt-4 pb-3 flex items-center justify-center gap-1.5">
+                    <span className="sparkle" />{block.title}<span className="sparkle" />
+                  </h2>
+                )}
+                <div className="relative z-[1]">
+                  <iframe
+                    src={embedUrl}
+                    height={getSpotifyEmbedHeight(embedUrl)}
+                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                    className="w-full border-0"
+                    style={{ borderRadius: 12 }}
+                    title="Spotify"
+                  />
+                </div>
+                {block.caption && (
+                  <p className="relative z-[1] px-4 py-3 text-xs text-slate-600 whitespace-pre-wrap leading-relaxed">{block.caption}</p>
+                )}
               </div>
-            ) : mostFans.length === 0 ? (
-              <div className="text-center py-3">
-                <p className="text-slate-400 text-xs">まだ誰も刻っていません</p>
-                <p className="text-xs font-bold brand-gradient-text mt-1">今日最初に刻む人になろう！</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-3 gap-2">
-                {mostFans.map((f) => {
-                  const name = f.fan.displayName ?? f.fan.name ?? "名無し";
-                  const iconUrl = f.fan.creatorProfile?.iconUrl;
-                  const isMe = f.fanId === session?.user.id;
-                  return (
-                    <div key={f.id} className="flex items-center gap-2">
-                      <div className="rounded-full overflow-hidden bg-pink-50 flex-shrink-0 flex items-center justify-center" style={{ width: 28, height: 28 }}>
-                        {iconUrl
-                          ? <Image src={iconUrl} alt={name} width={28} height={28} className="object-cover" style={{ width: 28, height: 28 }} unoptimized />
-                          : <span className="text-xs font-bold text-[#F58BCB]">{name[0]}</span>}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <FanNameMarquee name={name} className={`text-xs ${isMe ? "brand-gradient-text font-bold" : "text-slate-600"}`} />
-                        <p className="text-slate-400" style={{ fontSize: "0.6rem" }}>{f.totalKizari}回</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-          </KizaruCardWrapper>
-        );
+            </div>
+          );
+        }
 
-        if (key === "streak") return (
-          <KizaruCardWrapper key="streak">
-          <div className="glass-card rounded-2xl pt-2 pb-4 px-5">
-            <h2 className="text-xs font-bold brand-gradient-text text-center mb-3 flex items-center justify-center gap-1.5">
-              <span className="sparkle" />歴代継続<span className="sparkle" />
-            </h2>
-            {!creator.showStreakCard ? (
-              <div className="flex justify-center py-2">
-                <span style={{ display: "inline-block", width: 32, height: 32, maskImage: "url(/hidden-icon.png)", maskSize: "contain", maskRepeat: "no-repeat", maskPosition: "center", WebkitMaskImage: "url(/hidden-icon.png)", WebkitMaskSize: "contain", WebkitMaskRepeat: "no-repeat", WebkitMaskPosition: "center", background: "#94a3b8" }} />
+        if (block.type === "timetree") {
+          const embedUrl = extractTimeTreeEmbedUrl(block.url ?? "");
+          if (!embedUrl) return null;
+          return (
+            <div key={block.id} className="w-full max-w-lg mx-auto px-4 mt-4 mb-2">
+              <div className="glass-card rounded-2xl overflow-hidden">
+                {block.title && (
+                  <h2 className="relative z-[1] text-xs font-bold brand-gradient-text text-center pt-4 pb-3 flex items-center justify-center gap-1.5">
+                    <span className="sparkle" />{block.title}<span className="sparkle" />
+                  </h2>
+                )}
+                <div className="relative z-[1]">
+                  <iframe
+                    src={embedUrl}
+                    height={500}
+                    allow="autoplay"
+                    className="w-full border-0"
+                    title="タイムツリー"
+                  />
+                </div>
+                {block.caption && (
+                  <p className="relative z-[1] px-4 py-3 text-xs text-slate-600 whitespace-pre-wrap leading-relaxed">{block.caption}</p>
+                )}
               </div>
-            ) : streakFans.length === 0 ? (
-              <div className="text-center py-3">
-                <p className="text-slate-400 text-xs">まだ誰も刻っていません</p>
-                <p className="text-xs font-bold brand-gradient-text mt-1">今日最初に刻む人になろう！</p>
+            </div>
+          );
+        }
+
+        if (block.type === "ranking") {
+          const order = (creator.cardOrder ?? "fastest,random,most,streak").split(",");
+          const showMap: Record<string, boolean> = {
+            fastest: creator.showFastestCard,
+            random: creator.showRandomCard,
+            most: creator.showMostCard,
+            streak: creator.showStreakCard,
+          };
+          const visibleKeys = order.filter((k) => showMap[k]);
+          if (visibleKeys.length === 0) return null;
+          return (
+            <div key={block.id} className="w-full max-w-lg mx-auto px-4 mt-4 mb-2">
+              <div className="glass-card rounded-2xl px-5 divide-y divide-slate-100">
+                {visibleKeys.map((key) => (
+                  <div key={key} className="py-4">
+                    {key === "fastest" && (
+                      <>
+                        <h2 className="text-xs font-bold brand-gradient-text text-center mb-3 flex items-center justify-center gap-1.5">
+                          <span className="sparkle" />最速<span className="sparkle" />
+                        </h2>
+                        {fastestKizaris.length === 0 ? (
+                          <div className="text-center py-2">
+                            <p className="text-slate-400 text-xs">まだ誰も刻っていません</p>
+                            <p className="text-xs font-bold brand-gradient-text mt-1">今日最初に刻む人になろう！</p>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="grid grid-cols-3 gap-2">
+                              {fastestKizaris.map((k) => {
+                                const name = k.fan.displayName ?? k.fan.name ?? "名無し";
+                                const iconUrl = k.fan.creatorProfile?.iconUrl;
+                                const isMe = k.fanId === session?.user.id;
+                                return (
+                                  <div key={k.id} className="flex items-center gap-2">
+                                    <div className="rounded-full overflow-hidden bg-pink-50 flex-shrink-0 flex items-center justify-center" style={{ width: 28, height: 28 }}>
+                                      {iconUrl ? <Image src={iconUrl} alt={name} width={28} height={28} className="object-cover" style={{ width: 28, height: 28 }} unoptimized /> : <span className="text-xs font-bold text-[#F58BCB]">{name[0]}</span>}
+                                    </div>
+                                    <FanNameMarquee name={name} className={`text-xs ${isMe ? "brand-gradient-text font-bold" : "text-slate-600"}`} />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <div className="text-center mt-4">
+                              <a href={`/${slug}/kizaris`} className="inline-flex items-center gap-1 text-xs brand-gradient-text font-bold">もっと見る<span className="more-icon" /></a>
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )}
+                    {key === "random" && (
+                      <>
+                        <h2 className="text-xs font-bold brand-gradient-text text-center mb-1 flex items-center justify-center gap-1.5">
+                          <span className="sparkle" />ランダム<span className="sparkle" />
+                        </h2>
+                        {randomKizaris.length === 0 ? (
+                          <div className="text-center py-2">
+                            <p className="text-slate-400 text-xs">まだ誰も刻っていません</p>
+                            <p className="text-xs font-bold brand-gradient-text mt-1">今日最初に刻む人になろう！</p>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-center text-slate-400 mb-3" style={{ fontSize: "0.6rem" }}>ランダムで{randomKizaris.length}名表示中！</p>
+                            <div className="grid grid-cols-3 gap-2">
+                              {randomKizaris.map((k) => {
+                                const name = k.fan.displayName ?? k.fan.name ?? "名無し";
+                                const iconUrl = k.fan.creatorProfile?.iconUrl;
+                                const isMe = k.fanId === session?.user.id;
+                                return (
+                                  <div key={k.id} className="flex items-center gap-2">
+                                    <div className="rounded-full overflow-hidden bg-pink-50 flex-shrink-0 flex items-center justify-center" style={{ width: 28, height: 28 }}>
+                                      {iconUrl ? <Image src={iconUrl} alt={name} width={28} height={28} className="object-cover" style={{ width: 28, height: 28 }} unoptimized /> : <span className="text-xs font-bold text-[#F58BCB]">{name[0]}</span>}
+                                    </div>
+                                    <FanNameMarquee name={name} className={`text-xs ${isMe ? "brand-gradient-text font-bold" : "text-slate-600"}`} />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <div className="text-center mt-4">
+                              <a href={`/${slug}/kizaris`} className="inline-flex items-center gap-1 text-xs brand-gradient-text font-bold">もっと見る<span className="more-icon" /></a>
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )}
+                    {key === "most" && (
+                      <>
+                        <h2 className="text-xs font-bold brand-gradient-text text-center mb-3 flex items-center justify-center gap-1.5">
+                          <span className="sparkle" />歴代最多<span className="sparkle" />
+                        </h2>
+                        {mostFans.length === 0 ? (
+                          <div className="text-center py-2">
+                            <p className="text-slate-400 text-xs">まだ誰も刻っていません</p>
+                            <p className="text-xs font-bold brand-gradient-text mt-1">今日最初に刻む人になろう！</p>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-3 gap-2">
+                            {mostFans.map((f) => {
+                              const name = f.fan.displayName ?? f.fan.name ?? "名無し";
+                              const iconUrl = f.fan.creatorProfile?.iconUrl;
+                              const isMe = f.fanId === session?.user.id;
+                              return (
+                                <div key={f.id} className="flex items-center gap-2">
+                                  <div className="rounded-full overflow-hidden bg-pink-50 flex-shrink-0 flex items-center justify-center" style={{ width: 28, height: 28 }}>
+                                    {iconUrl ? <Image src={iconUrl} alt={name} width={28} height={28} className="object-cover" style={{ width: 28, height: 28 }} unoptimized /> : <span className="text-xs font-bold text-[#F58BCB]">{name[0]}</span>}
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <FanNameMarquee name={name} className={`text-xs ${isMe ? "brand-gradient-text font-bold" : "text-slate-600"}`} />
+                                    <p className="text-slate-400" style={{ fontSize: "0.6rem" }}>{f.totalKizari}回</p>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {key === "streak" && (
+                      <>
+                        <h2 className="text-xs font-bold brand-gradient-text text-center mb-3 flex items-center justify-center gap-1.5">
+                          <span className="sparkle" />歴代継続<span className="sparkle" />
+                        </h2>
+                        {streakFans.length === 0 ? (
+                          <div className="text-center py-2">
+                            <p className="text-slate-400 text-xs">まだ誰も刻っていません</p>
+                            <p className="text-xs font-bold brand-gradient-text mt-1">今日最初に刻む人になろう！</p>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-3 gap-2">
+                            {streakFans.map((f) => {
+                              const name = f.fan.displayName ?? f.fan.name ?? "名無し";
+                              const iconUrl = f.fan.creatorProfile?.iconUrl;
+                              const isMe = f.fanId === session?.user.id;
+                              return (
+                                <div key={f.id} className="flex items-center gap-2">
+                                  <div className="rounded-full overflow-hidden bg-pink-50 flex-shrink-0 flex items-center justify-center" style={{ width: 28, height: 28 }}>
+                                    {iconUrl ? <Image src={iconUrl} alt={name} width={28} height={28} className="object-cover" style={{ width: 28, height: 28 }} unoptimized /> : <span className="text-xs font-bold text-[#F58BCB]">{name[0]}</span>}
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <FanNameMarquee name={name} className={`text-xs ${isMe ? "brand-gradient-text font-bold" : "text-slate-600"}`} />
+                                    <p className="text-slate-400" style={{ fontSize: "0.6rem" }}>🔥 {f.streakDays}日連続</p>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                ))}
               </div>
-            ) : (
-              <div className="grid grid-cols-3 gap-2">
-                {streakFans.map((f) => {
-                  const name = f.fan.displayName ?? f.fan.name ?? "名無し";
-                  const iconUrl = f.fan.creatorProfile?.iconUrl;
-                  const isMe = f.fanId === session?.user.id;
-                  return (
-                    <div key={f.id} className="flex items-center gap-2">
-                      <div className="rounded-full overflow-hidden bg-pink-50 flex-shrink-0 flex items-center justify-center" style={{ width: 28, height: 28 }}>
-                        {iconUrl
-                          ? <Image src={iconUrl} alt={name} width={28} height={28} className="object-cover" style={{ width: 28, height: 28 }} unoptimized />
-                          : <span className="text-xs font-bold text-[#F58BCB]">{name[0]}</span>}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <FanNameMarquee name={name} className={`text-xs ${isMe ? "brand-gradient-text font-bold" : "text-slate-600"}`} />
-                        <p className="text-slate-400" style={{ fontSize: "0.6rem" }}>🔥 {f.streakDays}日連続</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-          </KizaruCardWrapper>
-        );
+            </div>
+          );
+        }
 
         return null;
       })}
-      </KizaruSection>
 
       {session && !isOwner && (
         <div className="flex justify-center mt-6 mb-2">

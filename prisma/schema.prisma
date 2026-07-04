@@ -37,8 +37,26 @@ model CreatorProfile {
   bio          String?
   bioLink      String?
   bioLinkLabel String?
-  iconUrl      String?
-  isPublic         Boolean @default(true)
+  iconUrl          String?
+  featuredVideoUrl     String?
+  featuredVideoTitle   String?
+  featuredVideoCaption String?
+  featuredImageUrl     String?
+  featuredImageTitle   String?
+  featuredImageCaption String?
+  featuredImageLink    String?
+  featuredTextTitle    String?
+  featuredTextCaption  String?
+  featuredMusicUrl      String?
+  featuredMusicTitle    String?
+  featuredMusicCaption  String?
+  featuredSpotifyUrl     String?
+  featuredSpotifyTitle   String?
+  featuredSpotifyCaption String?
+  featuredCalendarUrl    String?
+  featuredCalendarTitle  String?
+  featuredCalendarCaption String?
+  isPublic             Boolean @default(true)
   slugChangedAt    DateTime?
   showFastestCard  Boolean @default(true)
   showRandomCard   Boolean @default(true)
@@ -47,13 +65,31 @@ model CreatorProfile {
   showKizaruButton Boolean @default(true)
   cardOrder        String  @default("fastest,random,most,streak")
 
-  socialLinks SocialLink[]
-  kizaris     Kizari[]
-  fans        FanFollow[]
-  linkClicks  LinkClick[]
+  socialLinks    SocialLink[]
+  kizaris        Kizari[]
+  fans           FanFollow[]
+  linkClicks     LinkClick[]
+  contentBlocks  ContentBlock[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ContentBlock {
+  id        String         @id @default(cuid())
+  creatorId String
+  creator   CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  type      String         // youtube | image | text | spotify | applemusic | timetree | ranking
+  order     Int            @default(0)
+  title     String?
+  caption   String?
+  url       String?
+  imageUrl  String?
+  link      String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([creatorId])
 }
 
 model SocialLink {

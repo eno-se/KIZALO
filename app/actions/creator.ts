@@ -71,12 +71,233 @@ export async function createCreatorProfile(slug: string, displayName: string) {
   return { success: true, slug };
 }
 
+export async function updateFeaturedImage(data: {
+  imageUrl: string | null;
+  title: string | null;
+  caption: string | null;
+  link: string | null;
+}) {
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+
+  if (data.title && data.title.length > 50) return { error: "タイトルは50文字以内で入力してください" };
+  if (data.caption && data.caption.length > 2200) return { error: "文章は2200文字以内で入力してください" };
+  if (data.link) {
+    try { new URL(data.link); } catch { return { error: "リンクURLが不正です" }; }
+  }
+
+  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  if (!profile) throw new Error("Profile not found");
+
+  if (
+    data.imageUrl !== profile.featuredImageUrl &&
+    profile.featuredImageUrl?.startsWith(R2_PUBLIC_URL)
+  ) {
+    const oldKey = profile.featuredImageUrl.replace(`${R2_PUBLIC_URL}/`, "");
+    try { await r2.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: oldKey })); } catch {}
+  }
+
+  await db.creatorProfile.update({
+    where: { id: profile.id },
+    data: {
+      featuredImageUrl: data.imageUrl || null,
+      featuredImageTitle: data.title || null,
+      featuredImageCaption: data.caption || null,
+      featuredImageLink: data.link || null,
+    },
+  });
+
+  revalidatePath("/edit");
+  revalidatePath(`/${profile.slug}`);
+}
+
+export async function updateFeaturedCalendar(data: {
+  url: string | null;
+  title: string | null;
+  caption: string | null;
+}) {
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+
+  if (data.title && data.title.length > 50) return { error: "タイトルは50文字以内で入力してください" };
+  if (data.caption && data.caption.length > 2200) return { error: "文章は2200文字以内で入力してください" };
+
+  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  if (!profile) throw new Error("Profile not found");
+
+  await db.creatorProfile.update({
+    where: { id: profile.id },
+    data: {
+      featuredCalendarUrl: data.url || null,
+      featuredCalendarTitle: data.title || null,
+      featuredCalendarCaption: data.caption || null,
+    },
+  });
+
+  revalidatePath("/edit");
+  revalidatePath(`/${profile.slug}`);
+}
+
+export async function updateFeaturedSpotify(data: {
+  url: string | null;
+  title: string | null;
+  caption: string | null;
+}) {
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+
+  if (data.title && data.title.length > 50) return { error: "タイトルは50文字以内で入力してください" };
+  if (data.caption && data.caption.length > 2200) return { error: "文章は2200文字以内で入力してください" };
+
+  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  if (!profile) throw new Error("Profile not found");
+
+  await db.creatorProfile.update({
+    where: { id: profile.id },
+    data: {
+      featuredSpotifyUrl: data.url || null,
+      featuredSpotifyTitle: data.title || null,
+      featuredSpotifyCaption: data.caption || null,
+    },
+  });
+
+  revalidatePath("/edit");
+  revalidatePath(`/${profile.slug}`);
+}
+
+export async function updateFeaturedMusic(data: {
+  url: string | null;
+  title: string | null;
+  caption: string | null;
+}) {
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+
+  if (data.title && data.title.length > 50) return { error: "タイトルは50文字以内で入力してください" };
+  if (data.caption && data.caption.length > 2200) return { error: "文章は2200文字以内で入力してください" };
+
+  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  if (!profile) throw new Error("Profile not found");
+
+  await db.creatorProfile.update({
+    where: { id: profile.id },
+    data: {
+      featuredMusicUrl: data.url || null,
+      featuredMusicTitle: data.title || null,
+      featuredMusicCaption: data.caption || null,
+    },
+  });
+
+  revalidatePath("/edit");
+  revalidatePath(`/${profile.slug}`);
+}
+
+export async function updateFeaturedText(data: {
+  title: string | null;
+  caption: string | null;
+}) {
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+
+  if (data.title && data.title.length > 50) return { error: "タイトルは50文字以内で入力してください" };
+  if (data.caption && data.caption.length > 2200) return { error: "文章は2200文字以内で入力してください" };
+
+  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  if (!profile) throw new Error("Profile not found");
+
+  await db.creatorProfile.update({
+    where: { id: profile.id },
+    data: {
+      featuredTextTitle: data.title || null,
+      featuredTextCaption: data.caption || null,
+    },
+  });
+
+  revalidatePath("/edit");
+  revalidatePath(`/${profile.slug}`);
+}
+
+export async function updateFeaturedVideo(data: {
+  url: string | null;
+  title: string | null;
+  caption: string | null;
+}) {
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+
+  if (data.title && data.title.length > 50) return { error: "タイトルは50文字以内で入力してください" };
+  if (data.caption && data.caption.length > 2200) return { error: "文章は2200文字以内で入力してください" };
+
+  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  if (!profile) throw new Error("Profile not found");
+
+  await db.creatorProfile.update({
+    where: { id: profile.id },
+    data: {
+      featuredVideoUrl: data.url || null,
+      featuredVideoTitle: data.title || null,
+      featuredVideoCaption: data.caption || null,
+    },
+  });
+
+  revalidatePath("/edit");
+  revalidatePath(`/${profile.slug}`);
+}
+
+export async function updateProfileIdentity(displayName: string, iconUrl: string | null) {
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+
+  const { validateDisplayName } = await import("@/lib/sns-validation");
+  const nameErr = validateDisplayName(displayName);
+  if (nameErr) return { error: nameErr };
+  if (containsNgWord(displayName)) return { error: "この内容は使用できません" };
+
+  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  if (!profile) throw new Error("Profile not found");
+
+  if (iconUrl !== profile.iconUrl && profile.iconUrl?.startsWith(R2_PUBLIC_URL)) {
+    const oldKey = profile.iconUrl.replace(`${R2_PUBLIC_URL}/`, "");
+    try { await r2.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: oldKey })); } catch {}
+  }
+
+  await db.creatorProfile.update({
+    where: { id: profile.id },
+    data: { displayName: displayName.trim(), iconUrl },
+  });
+
+  revalidatePath("/edit");
+  revalidatePath(`/${profile.slug}`);
+}
+
+export async function updateProfileBio(bio: string, bioLink: string, bioLinkLabel: string) {
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+  if (containsNgWord(bio)) return { error: "この内容は使用できません" };
+
+  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  if (!profile) throw new Error("Profile not found");
+
+  await db.creatorProfile.update({
+    where: { id: profile.id },
+    data: {
+      bio: bio.replace(/\n{2,}/g, "\n"),
+      bioLink: bioLink ?? "",
+      bioLinkLabel: bioLinkLabel ?? "",
+    },
+  });
+
+  revalidatePath("/edit");
+  revalidatePath(`/${profile.slug}`);
+}
+
 export async function updateCreatorProfile(data: {
   displayName: string;
   bio: string;
   bioLink?: string;
   bioLinkLabel?: string;
   iconUrl?: string | null;
+  featuredVideoUrl?: string | null;
 }) {
   const session = await auth();
   if (!session) throw new Error("Unauthorized");
@@ -112,6 +333,7 @@ export async function updateCreatorProfile(data: {
       bioLink: data.bioLink ?? "",
       bioLinkLabel: data.bioLinkLabel ?? "",
       ...(data.iconUrl !== undefined && { iconUrl: data.iconUrl }),
+      ...(data.featuredVideoUrl !== undefined && { featuredVideoUrl: data.featuredVideoUrl || null }),
     },
   });
 
@@ -134,16 +356,20 @@ export async function upsertSocialLink(platform: string, url: string) {
     where: { creatorId: profile.id, platform },
   });
 
+  let linkId: string;
   if (existing) {
     await db.socialLink.update({ where: { id: existing.id }, data: { url } });
+    linkId = existing.id;
   } else {
     const count = await db.socialLink.count({ where: { creatorId: profile.id } });
     if (count >= 4) throw new Error("SNSリンクは4つまで登録できます");
-    await db.socialLink.create({ data: { creatorId: profile.id, platform, url, order: count } });
+    const created = await db.socialLink.create({ data: { creatorId: profile.id, platform, url, order: count } });
+    linkId = created.id;
   }
 
   revalidatePath("/dashboard");
   revalidatePath(`/${profile.slug}`);
+  return { id: linkId };
 }
 
 export async function reorderSocialLinks(orderedIds: string[]) {

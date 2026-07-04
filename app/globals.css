@@ -103,6 +103,13 @@ body {
   transform: translateY(0);
   opacity: 1;
 }
+.glass-btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+  pointer-events: none;
+}
 
 /* セカンダリボタン */
 .glass-btn-secondary {

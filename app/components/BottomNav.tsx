@@ -56,7 +56,7 @@ function SettingsIcon({ active }: { active: boolean }) {
 export default function BottomNav({ mySlug }: { mySlug: string | null }) {
   const pathname = usePathname();
   const myPageHref = mySlug ? `/${mySlug}` : "/setup";
-  const myPageActive = mySlug ? pathname === `/${mySlug}` : pathname === "/me";
+  const myPageActive = mySlug ? (pathname === `/${mySlug}` || pathname === "/edit") : pathname === "/me";
 
   const dashboardActive = pathname === "/dashboard";
   const settingsActive = pathname === "/me";
