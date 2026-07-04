@@ -275,6 +275,17 @@ export async function updateProfileBio(bio: string, bioLink: string, bioLinkLabe
   if (!session) throw new Error("Unauthorized");
   if (containsNgWord(bio)) return { error: "この内容は使用できません" };
 
+  if (bioLink) {
+    try {
+      const parsed = new URL(bioLink);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+        return { error: "URLはhttpまたはhttpsで始めてください" };
+      }
+    } catch {
+      return { error: "有効なURLを入力してください" };
+    }
+  }
+
   const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
   if (!profile) throw new Error("Profile not found");
 
