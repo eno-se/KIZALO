@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
   const yesterdayStr = getJstYesterdayString();
 
   // 昨日 JST 内に lastKizariAt がある FanFollow を streakDays 降順で取得
-  const [candidates, todayFanIds] = await Promise.all([
+  const [candidates, todayFanIds, yesterdayTotal] = await Promise.all([
     db.fanFollow.findMany({
       where: {
         creatorId,
@@ -48,6 +48,7 @@ export async function GET(req: NextRequest) {
       where: { creatorId, date: todayStr },
       select: { fanId: true },
     }),
+    db.kizari.count({ where: { creatorId, date: yesterdayStr } }),
   ]);
 
   const todaySet = new Set(todayFanIds.map((k) => k.fanId));
@@ -64,5 +65,5 @@ export async function GET(req: NextRequest) {
     streakDays: f.streakDays,
   }));
 
-  return NextResponse.json({ fans, hasMore, total });
+  return NextResponse.json({ fans, hasMore, total, yesterdayTotal });
 }

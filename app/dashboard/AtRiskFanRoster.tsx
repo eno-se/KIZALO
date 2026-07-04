@@ -14,6 +14,7 @@ export default function AtRiskFanRoster() {
   const [fans, setFans] = useState<Fan[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [total, setTotal] = useState(0);
+  const [yesterdayTotal, setYesterdayTotal] = useState(0);
   const [skip, setSkip] = useState(0);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -29,6 +30,7 @@ export default function AtRiskFanRoster() {
     setFans((prev) => reset ? data.fans : [...prev, ...data.fans]);
     setHasMore(data.hasMore);
     setTotal(data.total);
+    setYesterdayTotal(data.yesterdayTotal);
     setSkip(currentSkip + data.fans.length);
     loadingRef.current = false;
     setLoading(false);
@@ -48,11 +50,20 @@ export default function AtRiskFanRoster() {
   }, [hasMore, skip, fetchFans]);
 
   if (initialLoading) {
-    return <p className="text-xs text-slate-400">読み込み中...</p>;
+    return (
+      <div className="absolute inset-0 flex items-center justify-center rounded-2xl z-10" style={{ background: "rgba(255,255,255,0.6)" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/loading.gif" alt="loading" style={{ width: 80, height: 80 }} />
+      </div>
+    );
   }
 
   if (fans.length === 0) {
-    return <p className="text-xs text-slate-400">昨日刻んだ全員がすでに来ています</p>;
+    return (
+      <p className="text-xs text-slate-400">
+        {yesterdayTotal === 0 ? "昨日の刻みはありませんでした" : "昨日刻んだ全員がすでに来ています"}
+      </p>
+    );
   }
 
   return (
