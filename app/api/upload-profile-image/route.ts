@@ -3,6 +3,7 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { auth } from "@/lib/auth";
 import { r2, R2_BUCKET, R2_PUBLIC_URL } from "@/lib/r2";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -10,6 +11,10 @@ export async function POST(req: NextRequest) {
   try {
     const session = await auth();
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    if (!checkRateLimit(`upload-profile-image:${session.user.id}`, 10, 60 * 60 * 1000)) {
+      return NextResponse.json({ error: "アップロード回数の上限に達しました。しばらくお待ちください。" }, { status: 429 });
+    }
 
     const { contentType, contentLength } = await req.json();
     const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
