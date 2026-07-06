@@ -37,6 +37,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false }, { status: 404 });
   }
 
+  if (platform === "bio") {
+    // bio リンクは DB レコードなし、creator 存在チェックのみ
+  } else if (platform === "block-image") {
+    const block = await db.contentBlock.findFirst({
+      where: { id: linkId, creatorId },
+      select: { id: true },
+    });
+    if (!block) return NextResponse.json({ ok: false }, { status: 400 });
+  } else {
+    const link = await db.socialLink.findFirst({
+      where: { id: linkId, creatorId, platform },
+      select: { id: true },
+    });
+    if (!link) return NextResponse.json({ ok: false }, { status: 400 });
+  }
+
   try {
     await db.linkClick.create({
       data: { creatorId, linkId, label, platform, date: getJstDateString(), ip },
