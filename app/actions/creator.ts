@@ -86,7 +86,10 @@ export async function updateFeaturedImage(data: {
   if (data.title && data.title.length > 50) return { error: "タイトルは50文字以内で入力してください" };
   if (data.caption && data.caption.length > 2200) return { error: "文章は2200文字以内で入力してください" };
   if (data.link) {
-    try { new URL(data.link); } catch { return { error: "リンクURLが不正です" }; }
+    try {
+      const u = new URL(data.link);
+      if (u.protocol !== "http:" && u.protocol !== "https:") return { error: "リンクURLはhttp/httpsで入力してください" };
+    } catch { return { error: "リンクURLが不正です" }; }
   }
 
   const profile = await db.creatorProfile.findUnique({ where: { userId } });

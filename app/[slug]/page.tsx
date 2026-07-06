@@ -23,9 +23,9 @@ export async function generateMetadata(
   const { slug } = await params;
   const creator = await db.creatorProfile.findUnique({
     where: { slug },
-    select: { displayName: true, bio: true },
+    select: { displayName: true, bio: true, user: { select: { isBanned: true, isSuspended: true } } },
   });
-  if (!creator) return {};
+  if (!creator || creator.user.isBanned || creator.user.isSuspended) return {};
   const title = `${creator.displayName} | KIZALO`;
   const description = creator.bio
     ? creator.bio.slice(0, 80)
@@ -71,6 +71,7 @@ export default async function CreatorPage({ params }: { params: Promise<{ slug: 
   const creator = await db.creatorProfile.findUnique({
     where: { slug },
     include: {
+      user: { select: { isBanned: true, isSuspended: true } },
       socialLinks: { orderBy: { order: "asc" } },
       contentBlocks: { orderBy: { order: "asc" } },
       kizaris: {
@@ -82,7 +83,7 @@ export default async function CreatorPage({ params }: { params: Promise<{ slug: 
     },
   });
 
-  if (!creator || !creator.isPublic) notFound();
+  if (!creator || !creator.isPublic || creator.user.isBanned || creator.user.isSuspended) notFound();
 
   const visibleKizaris = creator.kizaris;
 

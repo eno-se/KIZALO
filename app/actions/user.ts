@@ -3,11 +3,13 @@
 import { auth, signOut } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { requireActiveUser } from "@/lib/require-active-user";
 
 export async function setupUser(displayName: string, slug: string, honeypot: string = "") {
   if (honeypot) return { error: "エラーが発生しました" };
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  const r = await requireActiveUser();
+  if ("error" in r) return { error: r.error };
+  const { userId } = r;
 
   const slugRegex = /^[a-zA-Z0-9_-]{3,30}$/;
   if (!slugRegex.test(slug)) {
@@ -18,25 +20,25 @@ export async function setupUser(displayName: string, slug: string, honeypot: str
     where: { slug },
     select: { userId: true },
   });
-  if (existing && existing.userId !== session.user.id) {
+  if (existing && existing.userId !== userId) {
     return { error: "このIDはすでに使われています" };
   }
 
   const hasProfile = await db.creatorProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId },
     select: { id: true },
   });
 
   await db.$transaction([
     db.user.update({
-      where: { id: session.user.id },
+      where: { id: userId },
       data: { displayName },
     }),
     ...(hasProfile
       ? []
       : [
           db.creatorProfile.create({
-            data: { userId: session.user.id, slug, displayName },
+            data: { userId, slug, displayName },
           }),
         ]),
   ]);
@@ -45,11 +47,11 @@ export async function setupUser(displayName: string, slug: string, honeypot: str
 }
 
 export async function updateDisplayName(displayName: string) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  const r = await requireActiveUser();
+  if ("error" in r) return { error: r.error };
 
   await db.user.update({
-    where: { id: session.user.id },
+    where: { id: r.userId },
     data: { displayName },
   });
 
@@ -69,12 +71,12 @@ export async function deleteAccount() {
 }
 
 export async function submitReport(targetUserId: string, reason: string) {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error("Unauthorized");
-  if (session.user.id === targetUserId) throw new Error("Cannot report yourself");
+  const r = await requireActiveUser();
+  if ("error" in r) return { error: r.error };
+  if (r.userId === targetUserId) throw new Error("Cannot report yourself");
 
   const existing = await db.report.findUnique({
-    where: { reporterId_targetUserId: { reporterId: session.user.id, targetUserId } },
+    where: { reporterId_targetUserId: { reporterId: r.userId, targetUserId } },
     select: { createdAt: true },
   });
 
@@ -86,8 +88,8 @@ export async function submitReport(targetUserId: string, reason: string) {
   }
 
   await db.report.upsert({
-    where: { reporterId_targetUserId: { reporterId: session.user.id, targetUserId } },
-    create: { reporterId: session.user.id, targetUserId, reason },
+    where: { reporterId_targetUserId: { reporterId: r.userId, targetUserId } },
+    create: { reporterId: r.userId, targetUserId, reason },
     update: { reason, createdAt: new Date() },
   });
 
