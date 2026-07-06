@@ -1,16 +1,17 @@
 "use server";
 
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { r2, R2_BUCKET, R2_PUBLIC_URL } from "@/lib/r2";
 import { getJstDateString } from "@/lib/jst";
 import { containsNgWord } from "@/lib/ngwords";
+import { requireActiveUser } from "@/lib/require-active-user";
 
 export async function updateSlug(newSlug: string) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  const r = await requireActiveUser();
+  if ("error" in r) return { error: r.error };
+  const { userId } = r;
 
   const slugRegex = /^[a-zA-Z0-9_-]{3,30}$/;
   if (!slugRegex.test(newSlug)) {
@@ -20,7 +21,7 @@ export async function updateSlug(newSlug: string) {
     return { error: "このIDは使用できません" };
   }
 
-  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  const profile = await db.creatorProfile.findUnique({ where: { userId } });
   if (!profile) return { error: "プロフィールが見つかりません" };
 
   // 当日JST内に変更済みかチェック
@@ -49,8 +50,9 @@ export async function updateSlug(newSlug: string) {
 }
 
 export async function createCreatorProfile(slug: string, displayName: string) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  const r = await requireActiveUser();
+  if ("error" in r) return { error: r.error };
+  const { userId } = r;
 
   const slugRegex = /^[a-zA-Z0-9_-]{3,30}$/;
   if (!slugRegex.test(slug)) {
@@ -64,7 +66,7 @@ export async function createCreatorProfile(slug: string, displayName: string) {
   if (existing) return { error: "このIDはすでに使われています" };
 
   await db.creatorProfile.create({
-    data: { userId: session.user.id, slug, displayName },
+    data: { userId, slug, displayName },
   });
 
   revalidatePath("/dashboard");
@@ -77,8 +79,9 @@ export async function updateFeaturedImage(data: {
   caption: string | null;
   link: string | null;
 }) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  const r = await requireActiveUser();
+  if ("error" in r) return { error: r.error };
+  const { userId } = r;
 
   if (data.title && data.title.length > 50) return { error: "タイトルは50文字以内で入力してください" };
   if (data.caption && data.caption.length > 2200) return { error: "文章は2200文字以内で入力してください" };
@@ -86,7 +89,7 @@ export async function updateFeaturedImage(data: {
     try { new URL(data.link); } catch { return { error: "リンクURLが不正です" }; }
   }
 
-  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  const profile = await db.creatorProfile.findUnique({ where: { userId } });
   if (!profile) throw new Error("Profile not found");
 
   if (
@@ -116,13 +119,14 @@ export async function updateFeaturedCalendar(data: {
   title: string | null;
   caption: string | null;
 }) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  const r = await requireActiveUser();
+  if ("error" in r) return { error: r.error };
+  const { userId } = r;
 
   if (data.title && data.title.length > 50) return { error: "タイトルは50文字以内で入力してください" };
   if (data.caption && data.caption.length > 2200) return { error: "文章は2200文字以内で入力してください" };
 
-  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  const profile = await db.creatorProfile.findUnique({ where: { userId } });
   if (!profile) throw new Error("Profile not found");
 
   await db.creatorProfile.update({
@@ -143,13 +147,14 @@ export async function updateFeaturedSpotify(data: {
   title: string | null;
   caption: string | null;
 }) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  const r = await requireActiveUser();
+  if ("error" in r) return { error: r.error };
+  const { userId } = r;
 
   if (data.title && data.title.length > 50) return { error: "タイトルは50文字以内で入力してください" };
   if (data.caption && data.caption.length > 2200) return { error: "文章は2200文字以内で入力してください" };
 
-  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  const profile = await db.creatorProfile.findUnique({ where: { userId } });
   if (!profile) throw new Error("Profile not found");
 
   await db.creatorProfile.update({
@@ -170,13 +175,14 @@ export async function updateFeaturedMusic(data: {
   title: string | null;
   caption: string | null;
 }) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  const r = await requireActiveUser();
+  if ("error" in r) return { error: r.error };
+  const { userId } = r;
 
   if (data.title && data.title.length > 50) return { error: "タイトルは50文字以内で入力してください" };
   if (data.caption && data.caption.length > 2200) return { error: "文章は2200文字以内で入力してください" };
 
-  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  const profile = await db.creatorProfile.findUnique({ where: { userId } });
   if (!profile) throw new Error("Profile not found");
 
   await db.creatorProfile.update({
@@ -196,13 +202,14 @@ export async function updateFeaturedText(data: {
   title: string | null;
   caption: string | null;
 }) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  const r = await requireActiveUser();
+  if ("error" in r) return { error: r.error };
+  const { userId } = r;
 
   if (data.title && data.title.length > 50) return { error: "タイトルは50文字以内で入力してください" };
   if (data.caption && data.caption.length > 2200) return { error: "文章は2200文字以内で入力してください" };
 
-  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  const profile = await db.creatorProfile.findUnique({ where: { userId } });
   if (!profile) throw new Error("Profile not found");
 
   await db.creatorProfile.update({
@@ -222,13 +229,14 @@ export async function updateFeaturedVideo(data: {
   title: string | null;
   caption: string | null;
 }) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  const r = await requireActiveUser();
+  if ("error" in r) return { error: r.error };
+  const { userId } = r;
 
   if (data.title && data.title.length > 50) return { error: "タイトルは50文字以内で入力してください" };
   if (data.caption && data.caption.length > 2200) return { error: "文章は2200文字以内で入力してください" };
 
-  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  const profile = await db.creatorProfile.findUnique({ where: { userId } });
   if (!profile) throw new Error("Profile not found");
 
   await db.creatorProfile.update({
@@ -245,15 +253,16 @@ export async function updateFeaturedVideo(data: {
 }
 
 export async function updateProfileIdentity(displayName: string, iconUrl: string | null) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  const r = await requireActiveUser();
+  if ("error" in r) return { error: r.error };
+  const { userId } = r;
 
   const { validateDisplayName } = await import("@/lib/sns-validation");
   const nameErr = validateDisplayName(displayName);
   if (nameErr) return { error: nameErr };
   if (containsNgWord(displayName)) return { error: "この内容は使用できません" };
 
-  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  const profile = await db.creatorProfile.findUnique({ where: { userId } });
   if (!profile) throw new Error("Profile not found");
 
   if (iconUrl !== profile.iconUrl && profile.iconUrl?.startsWith(R2_PUBLIC_URL)) {
@@ -271,8 +280,10 @@ export async function updateProfileIdentity(displayName: string, iconUrl: string
 }
 
 export async function updateProfileBio(bio: string, bioLink: string, bioLinkLabel: string) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  const r = await requireActiveUser();
+  if ("error" in r) return { error: r.error };
+  const { userId } = r;
+
   if (containsNgWord(bio)) return { error: "この内容は使用できません" };
 
   if (bioLink) {
@@ -286,7 +297,7 @@ export async function updateProfileBio(bio: string, bioLink: string, bioLinkLabe
     }
   }
 
-  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  const profile = await db.creatorProfile.findUnique({ where: { userId } });
   if (!profile) throw new Error("Profile not found");
 
   await db.creatorProfile.update({
@@ -310,21 +321,32 @@ export async function updateCreatorProfile(data: {
   iconUrl?: string | null;
   featuredVideoUrl?: string | null;
 }) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  const r = await requireActiveUser();
+  if ("error" in r) return { error: r.error };
+  const { userId } = r;
 
   const { validateDisplayName } = await import("@/lib/sns-validation");
   const nameErr = validateDisplayName(data.displayName);
-  if (nameErr) throw new Error(nameErr);
+  if (nameErr) return { error: nameErr };
 
   if (containsNgWord(data.displayName) || containsNgWord(data.bio)) {
     return { error: "この内容は使用できません" };
   }
 
-  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  if (data.bioLink) {
+    try {
+      const parsed = new URL(data.bioLink);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+        return { error: "URLはhttpまたはhttpsで始めてください" };
+      }
+    } catch {
+      return { error: "有効なURLを入力してください" };
+    }
+  }
+
+  const profile = await db.creatorProfile.findUnique({ where: { userId } });
   if (!profile) throw new Error("Profile not found");
 
-  // 旧アイコンをR2から削除
   if (
     data.iconUrl !== undefined &&
     data.iconUrl !== profile.iconUrl &&
@@ -353,14 +375,15 @@ export async function updateCreatorProfile(data: {
 }
 
 export async function upsertSocialLink(platform: string, url: string) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  const r = await requireActiveUser();
+  if ("error" in r) return { error: r.error };
+  const { userId } = r;
 
   const { validateSnsUrl } = await import("@/lib/sns-validation");
   const validationError = validateSnsUrl(platform, url);
-  if (validationError) throw new Error(validationError);
+  if (validationError) return { error: validationError };
 
-  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  const profile = await db.creatorProfile.findUnique({ where: { userId } });
   if (!profile) throw new Error("Profile not found");
 
   const existing = await db.socialLink.findFirst({
@@ -373,7 +396,7 @@ export async function upsertSocialLink(platform: string, url: string) {
     linkId = existing.id;
   } else {
     const count = await db.socialLink.count({ where: { creatorId: profile.id } });
-    if (count >= 4) throw new Error("SNSリンクは4つまで登録できます");
+    if (count >= 4) return { error: "SNSリンクは4つまで登録できます" };
     const created = await db.socialLink.create({ data: { creatorId: profile.id, platform, url, order: count } });
     linkId = created.id;
   }
@@ -384,10 +407,11 @@ export async function upsertSocialLink(platform: string, url: string) {
 }
 
 export async function reorderSocialLinks(orderedIds: string[]) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  const r = await requireActiveUser();
+  if ("error" in r) return { error: r.error };
+  const { userId } = r;
 
-  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  const profile = await db.creatorProfile.findUnique({ where: { userId } });
   if (!profile) throw new Error("Profile not found");
 
   await db.$transaction(
@@ -401,10 +425,11 @@ export async function reorderSocialLinks(orderedIds: string[]) {
 }
 
 export async function deleteSocialLink(id: string) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  const r = await requireActiveUser();
+  if ("error" in r) return { error: r.error };
+  const { userId } = r;
 
-  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  const profile = await db.creatorProfile.findUnique({ where: { userId } });
   if (!profile) throw new Error("Profile not found");
 
   await db.socialLink.deleteMany({ where: { id, creatorId: profile.id } });
@@ -413,9 +438,11 @@ export async function deleteSocialLink(id: string) {
 }
 
 export async function updateButtonVisibility(data: { showKizaruButton: boolean }) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
-  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  const r = await requireActiveUser();
+  if ("error" in r) return { error: r.error };
+  const { userId } = r;
+
+  const profile = await db.creatorProfile.findUnique({ where: { userId } });
   if (!profile) throw new Error("Profile not found");
   await db.creatorProfile.update({ where: { id: profile.id }, data });
   revalidatePath("/edit");
@@ -429,10 +456,11 @@ export async function updateCardVisibility(data: {
   showStreakCard: boolean;
   cardOrder: string;
 }) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  const r = await requireActiveUser();
+  if ("error" in r) return { error: r.error };
+  const { userId } = r;
 
-  const profile = await db.creatorProfile.findUnique({ where: { userId: session.user.id } });
+  const profile = await db.creatorProfile.findUnique({ where: { userId } });
   if (!profile) throw new Error("Profile not found");
 
   await db.creatorProfile.update({
@@ -443,4 +471,3 @@ export async function updateCardVisibility(data: {
   revalidatePath("/edit");
   revalidatePath(`/${profile.slug}`);
 }
-

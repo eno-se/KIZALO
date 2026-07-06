@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { auth } from "@/lib/auth";
 import { r2, R2_BUCKET, R2_PUBLIC_URL } from "@/lib/r2";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { requireActiveUser } from "@/lib/require-active-user";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const r = await requireActiveUser();
+    if ("error" in r) return NextResponse.json({ error: r.error }, { status: r.status });
 
-    if (!checkRateLimit(`upload-icon:${session.user.id}`, 10, 60 * 60 * 1000)) {
+    if (!checkRateLimit(`upload-icon:${r.userId}`, 10, 60 * 60 * 1000)) {
       return NextResponse.json({ error: "アップロード回数の上限に達しました。しばらくお待ちください。" }, { status: 429 });
     }
 
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     }
 
     const ext = contentType.split("/")[1].replace("jpeg", "jpg");
-    const key = `icons/${session.user.id}-${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}.${ext}`;
+    const key = `icons/${r.userId}-${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}.${ext}`;
 
     const command = new PutObjectCommand({
       Bucket: R2_BUCKET,

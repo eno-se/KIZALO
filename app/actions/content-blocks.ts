@@ -1,10 +1,10 @@
 "use server";
 
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { r2, R2_BUCKET, R2_PUBLIC_URL } from "@/lib/r2";
+import { requireActiveUser } from "@/lib/require-active-user";
 
 const ALLOWED_TYPES = ["youtube", "image", "text", "spotify", "applemusic", "timetree", "ranking"] as const;
 type BlockType = (typeof ALLOWED_TYPES)[number];
@@ -16,11 +16,11 @@ async function getProfile(userId: string) {
 }
 
 export async function addContentBlock(type: BlockType) {
-  const session = await auth();
-  if (!session) return { error: "Unauthorized" };
+  const r = await requireActiveUser();
+  if ("error" in r) return { error: r.error };
   if (!ALLOWED_TYPES.includes(type)) return { error: "Invalid type" };
 
-  const profile = await getProfile(session.user.id);
+  const profile = await getProfile(r.userId);
 
   const count = await db.contentBlock.count({ where: { creatorId: profile.id } });
   if (count >= 5) return { error: "コンテンツは最大5個まで追加できます" };
@@ -44,8 +44,8 @@ export async function updateContentBlock(
     link?: string | null;
   }
 ) {
-  const session = await auth();
-  if (!session) return { error: "Unauthorized" };
+  const r = await requireActiveUser();
+  if ("error" in r) return { error: r.error };
 
   if (data.title && data.title.length > 50) return { error: "タイトルは50文字以内で入力してください" };
   if (data.caption && data.caption.length > 2200) return { error: "文章は2200文字以内で入力してください" };
@@ -53,11 +53,10 @@ export async function updateContentBlock(
     try { new URL(data.link); } catch { return { error: "リンクURLが不正です" }; }
   }
 
-  const profile = await getProfile(session.user.id);
+  const profile = await getProfile(r.userId);
   const block = await db.contentBlock.findFirst({ where: { id, creatorId: profile.id } });
   if (!block) return { error: "ブロックが見つかりません" };
 
-  // 画像ブロックで imageUrl が変わる場合は古い画像をR2から削除
   if (
     data.imageUrl !== undefined &&
     data.imageUrl !== block.imageUrl &&
@@ -83,14 +82,13 @@ export async function updateContentBlock(
 }
 
 export async function deleteContentBlock(id: string) {
-  const session = await auth();
-  if (!session) return { error: "Unauthorized" };
+  const r = await requireActiveUser();
+  if ("error" in r) return { error: r.error };
 
-  const profile = await getProfile(session.user.id);
+  const profile = await getProfile(r.userId);
   const block = await db.contentBlock.findFirst({ where: { id, creatorId: profile.id } });
   if (!block) return { error: "ブロックが見つかりません" };
 
-  // 画像ブロックのR2削除
   if (block.imageUrl?.startsWith(R2_PUBLIC_URL)) {
     const key = block.imageUrl.replace(`${R2_PUBLIC_URL}/`, "");
     try { await r2.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: key })); } catch {}
@@ -98,7 +96,6 @@ export async function deleteContentBlock(id: string) {
 
   await db.contentBlock.delete({ where: { id } });
 
-  // order を詰め直す
   const remaining = await db.contentBlock.findMany({
     where: { creatorId: profile.id },
     orderBy: { order: "asc" },
@@ -112,10 +109,10 @@ export async function deleteContentBlock(id: string) {
 }
 
 export async function reorderContentBlocks(orderedIds: string[]) {
-  const session = await auth();
-  if (!session) return { error: "Unauthorized" };
+  const r = await requireActiveUser();
+  if ("error" in r) return { error: r.error };
 
-  const profile = await getProfile(session.user.id);
+  const profile = await getProfile(r.userId);
 
   await db.$transaction(
     orderedIds.map((id, index) =>
