@@ -6,9 +6,11 @@ import { Suspense } from "react";
 import LoginButton from "./LoginButton";
 import DevLogin from "./DevLogin";
 
-export default async function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const session = await auth();
   if (session) redirect("/");
+  const { error } = await searchParams;
+  const hasError = !!error;
 
   const devUsers = process.env.NODE_ENV === "development"
     ? await db.user.findMany({
@@ -25,6 +27,11 @@ export default async function LoginPage() {
           <Image src="/logo.png" alt="KIZALO" width={140} height={42} className="object-contain" priority />
         </div>
         <p className="text-sm text-slate-400 mb-8">推しのプロフィールに、名前を刻む。</p>
+        {hasError && (
+          <p className="text-xs text-rose-400 bg-rose-50 rounded-xl px-4 py-2 mb-4">
+            ログインに失敗しました。もう一度お試しください。
+          </p>
+        )}
         <Suspense>
           <LoginButton />
         </Suspense>
