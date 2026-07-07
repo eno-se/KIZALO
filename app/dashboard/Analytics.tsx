@@ -822,7 +822,7 @@ export default function Analytics({
           {dailyData.isToday && (
             <div className="glass-card rounded-2xl p-5 relative">
               <div className="text-xs text-slate-400 mb-0.5">まだ来ていない常連</div>
-              <div className="text-xs text-slate-300 mb-3">昨日刻んで今日まだ来ていない人</div>
+              <div className="text-xs text-slate-500 mb-3">昨日刻んで今日まだ来ていない人</div>
               <AtRiskFanRoster />
             </div>
           )}
@@ -835,7 +835,7 @@ export default function Analytics({
           <div className="glass-card rounded-2xl p-5 relative">
             {isPending && <LoadingOverlay />}
             <div className="text-xs text-slate-400 mb-0.5">刻みの傾向</div>
-            <div className="text-xs text-slate-300 mb-3">前日と比較</div>
+            <div className="text-xs text-slate-500 mb-3">前日と比較</div>
             <TrendStats newFans={dailyData.newFans} continuingFans={dailyData.continuingFans} returningFans={dailyData.returningFans} />
           </div>
         </>
@@ -923,7 +923,7 @@ export default function Analytics({
           <div className="glass-card rounded-2xl p-5 relative">
             {isPending && <LoadingOverlay />}
             <div className="text-xs text-slate-400 mb-0.5">刻みの傾向</div>
-            <div className="text-xs text-slate-300 mb-3">前週と比較</div>
+            <div className="text-xs text-slate-500 mb-3">前週と比較</div>
             <TrendStats newFans={weeklyData.newFans} continuingFans={weeklyData.continuingFans} returningFans={weeklyData.returningFans} />
           </div>
         </>
@@ -985,7 +985,7 @@ export default function Analytics({
           <div className="glass-card rounded-2xl p-5 relative">
             {isPending && <LoadingOverlay />}
             <div className="text-xs text-slate-400 mb-0.5">刻みの傾向</div>
-            <div className="text-xs text-slate-300 mb-3">前月と比較</div>
+            <div className="text-xs text-slate-500 mb-3">前月と比較</div>
             <TrendStats newFans={monthlyData.newFans} continuingFans={monthlyData.continuingFans} returningFans={monthlyData.returningFans} />
           </div>
         </>
@@ -1050,7 +1050,7 @@ export default function Analytics({
           <div className="glass-card rounded-2xl p-5 relative">
             {isPending && <LoadingOverlay />}
             <div className="text-xs text-slate-400 mb-0.5">刻みの傾向</div>
-            <div className="text-xs text-slate-300 mb-3">前年と比較</div>
+            <div className="text-xs text-slate-500 mb-3">前年と比較</div>
             <TrendStats newFans={yearlyData.newFans} continuingFans={yearlyData.continuingFans} returningFans={yearlyData.returningFans} />
           </div>
         </>
