@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { setupUser } from "@/app/actions/user";
+import { setupUser, logoutUser } from "@/app/actions/user";
 
 export default function SetupForm({ defaultName }: { defaultName: string }) {
   const [name, setName] = useState(defaultName);
@@ -90,6 +90,13 @@ export default function SetupForm({ defaultName }: { defaultName: string }) {
         className="glass-btn-primary w-full py-3 rounded-xl font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
       >
         {isPending ? "作成中..." : "プロフィールを作成する"}
+      </button>
+      <button
+        type="button"
+        onClick={() => logoutUser()}
+        className="w-full py-2 text-xs text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+      >
+        ログアウト
       </button>
     </form>
   );
