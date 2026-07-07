@@ -1,7 +1,6 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
-export async function GET() {
-  const session = await auth();
-  return NextResponse.json({ id: session?.user?.id ?? null });
-}
+export const GET = auth((req) => {
+  return NextResponse.json({ id: req.auth?.user?.id ?? null });
+});
