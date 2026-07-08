@@ -1,26 +1,10 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
 import Image from "next/image";
 import { upsertSocialLink, deleteSocialLink, reorderSocialLinks } from "@/app/actions/creator";
 import { validateSnsUrl } from "@/lib/sns-validation";
 import { useRouter } from "next/navigation";
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  horizontalListSortingStrategy,
-  useSortable,
-  arrayMove,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 
 const PLATFORMS = [
   { value: "x",          label: "X (Twitter)" },
@@ -40,48 +24,6 @@ const PLATFORMS = [
 
 type SocialLink = { id: string; platform: string; url: string; isNew?: boolean };
 
-function SortableIcon({
-  link,
-  index,
-  total,
-  onMove,
-}: {
-  link: SocialLink;
-  index: number;
-  total: number;
-  onMove: (index: number, dir: -1 | 1) => void;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: link.id });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 10 : undefined,
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} className="flex flex-col items-center gap-1.5 touch-none">
-      <div
-        className={`w-10 h-10 rounded-xl flex items-center justify-center touch-none cursor-grab active:cursor-grabbing ${link.isNew ? "ring-2 ring-pink-300" : "glass-btn-secondary"}`}
-        {...attributes}
-        {...listeners}
-      >
-        <Image src={`/sns/${link.platform}.png`} alt={link.platform} width={28} height={28} className="object-contain" draggable={false} />
-      </div>
-      <div className="flex gap-1">
-        <button type="button" onClick={() => onMove(index, -1)} disabled={index === 0}
-          className="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-slate-600 disabled:opacity-20 transition-colors">
-          ‹
-        </button>
-        <button type="button" onClick={() => onMove(index, 1)} disabled={index === total - 1}
-          className="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-slate-600 disabled:opacity-20 transition-colors">
-          ›
-        </button>
-      </div>
-    </div>
-  );
-}
-
 export default function EditSocialLinks({ socialLinks: initial }: { socialLinks: Omit<SocialLink, "isNew">[] }) {
   const [links, setLinks] = useState<SocialLink[]>(initial);
   const [platform, setPlatform] = useState("x");
@@ -91,24 +33,7 @@ export default function EditSocialLinks({ socialLinks: initial }: { socialLinks:
   const [saved, setSaved] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, startSave] = useTransition();
-  const [mounted, setMounted] = useState(false);
   const router = useRouter();
-
-  useEffect(() => setMounted(true), []);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
-  );
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const oldIndex = links.findIndex(l => l.id === active.id);
-    const newIndex = links.findIndex(l => l.id === over.id);
-    setLinks(prev => arrayMove(prev, oldIndex, newIndex));
-    setHasChanges(true);
-  };
 
   const moveLink = (index: number, dir: -1 | 1) => {
     const next = index + dir;
@@ -142,7 +67,6 @@ export default function EditSocialLinks({ socialLinks: initial }: { socialLinks:
     setSaveError(null);
     startSave(async () => {
       try {
-        // 削除
         const removedIds = initial
           .filter(il => !links.find(sl => sl.id === il.id))
           .map(il => il.id);
@@ -150,7 +74,6 @@ export default function EditSocialLinks({ socialLinks: initial }: { socialLinks:
           await deleteSocialLink(id);
         }
 
-        // 追加（tempIDを実IDに変換）
         const tempToReal: Record<string, string> = {};
         for (const link of links) {
           if (link.isNew) {
@@ -159,7 +82,6 @@ export default function EditSocialLinks({ socialLinks: initial }: { socialLinks:
           }
         }
 
-        // 並び替え
         const finalIds = links
           .filter(l => !l.isNew || tempToReal[l.id])
           .map(l => l.isNew ? tempToReal[l.id] : l.id);
@@ -167,7 +89,6 @@ export default function EditSocialLinks({ socialLinks: initial }: { socialLinks:
           await reorderSocialLinks(finalIds);
         }
 
-        // isNew フラグを消してIDを実IDに更新
         const cleanLinks: SocialLink[] = links
           .filter(l => !l.isNew || tempToReal[l.id])
           .map(l => ({
@@ -177,7 +98,6 @@ export default function EditSocialLinks({ socialLinks: initial }: { socialLinks:
           }));
         setLinks(cleanLinks);
         setHasChanges(false);
-
         setSaved(true);
         setTimeout(() => setSaved(false), 2500);
         router.refresh();
@@ -191,31 +111,29 @@ export default function EditSocialLinks({ socialLinks: initial }: { socialLinks:
     <div className="space-y-4">
       {links.length > 0 && (
         <>
-          {/* 横並びプレビュー */}
           <div>
-            <p className="text-xs font-semibold text-slate-500 mb-3">並び順（ドラッグまたは ‹ › で変更）</p>
-            {mounted ? (
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={links.map(l => l.id)} strategy={horizontalListSortingStrategy}>
-                  <div className="flex justify-center gap-3">
-                    {links.map((link, index) => (
-                      <SortableIcon key={link.id} link={link} index={index} total={links.length} onMove={moveLink} />
-                    ))}
+            <p className="text-xs font-semibold text-slate-500 mb-3">並び順（‹ › で変更）</p>
+            <div className="flex justify-center gap-3">
+              {links.map((link, index) => (
+                <div key={link.id} className="flex flex-col items-center gap-1.5">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${link.isNew ? "ring-2 ring-pink-300" : "glass-btn-secondary"}`}>
+                    <Image src={`/sns/${link.platform}.png`} alt={link.platform} width={28} height={28} className="object-contain" draggable={false} />
                   </div>
-                </SortableContext>
-              </DndContext>
-            ) : (
-              <div className="flex justify-center gap-3">
-                {links.map(link => (
-                  <div key={link.id} className="glass-btn-secondary w-10 h-10 rounded-xl flex items-center justify-center">
-                    <Image src={`/sns/${link.platform}.png`} alt={link.platform} width={28} height={28} className="object-contain" />
+                  <div className="flex gap-1">
+                    <button type="button" onClick={() => moveLink(index, -1)} disabled={index === 0}
+                      className="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-slate-600 disabled:opacity-20 transition-colors">
+                      ‹
+                    </button>
+                    <button type="button" onClick={() => moveLink(index, 1)} disabled={index === links.length - 1}
+                      className="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-slate-600 disabled:opacity-20 transition-colors">
+                      ›
+                    </button>
                   </div>
-                ))}
-              </div>
-            )}
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* リンク一覧（削除用） */}
           <div className="space-y-2">
             {links.map(link => (
               <div key={link.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/60 border border-slate-100">
@@ -243,7 +161,6 @@ export default function EditSocialLinks({ socialLinks: initial }: { socialLinks:
         </>
       )}
 
-      {/* 追加フォーム */}
       <form onSubmit={handleAddLocal} className="space-y-3 pt-2 border-t border-slate-100">
         <div className="flex items-center justify-between">
           <p className="text-xs font-semibold text-slate-500">リンクを追加</p>
@@ -268,7 +185,6 @@ export default function EditSocialLinks({ socialLinks: initial }: { socialLinks:
         </button>
       </form>
 
-      {/* 保存 */}
       {saveError && <p className="text-xs text-red-500 text-center">{saveError}</p>}
       {hasChanges && !saved && (
         <p className="text-xs text-center brand-gradient-text font-semibold">保存するボタンを押すまで反映されません</p>
