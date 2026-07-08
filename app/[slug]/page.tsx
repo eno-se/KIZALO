@@ -184,12 +184,12 @@ export default async function CreatorPage({ params }: { params: Promise<{ slug: 
             className="rounded-full p-[3px] mb-3"
             style={{ background: "linear-gradient(135deg, #F58BCB 0%, #B98AF5 50%, #7DB7FF 100%)" }}
           >
-            <div className="rounded-full bg-white p-[3px]" style={{ width: 166, height: 166 }}>
-              <div className="rounded-full overflow-hidden" style={{ width: 160, height: 160 }}>
+            <div className="rounded-full bg-white p-[3px]" style={{ width: 126, height: 126 }}>
+              <div className="rounded-full overflow-hidden" style={{ width: 120, height: 120 }}>
                 {creator.iconUrl ? (
-                  <Image src={creator.iconUrl} alt={creator.displayName} width={160} height={160} className="object-cover" style={{ width: 160, height: 160 }} />
+                  <Image src={creator.iconUrl} alt={creator.displayName} width={120} height={120} className="object-cover" style={{ width: 120, height: 120 }} />
                 ) : (
-                  <div className="bg-pink-50 flex items-center justify-center text-3xl text-[#F58BCB] font-bold" style={{ width: 160, height: 160 }}>
+                  <div className="bg-pink-50 flex items-center justify-center text-3xl text-[#F58BCB] font-bold" style={{ width: 120, height: 120 }}>
                     {creator.displayName[0]}
                   </div>
                 )}
@@ -197,7 +197,7 @@ export default async function CreatorPage({ params }: { params: Promise<{ slug: 
             </div>
           </div>
 
-          <h1 className="text-3xl font-bold text-slate-800 mb-1">{creator.displayName}</h1>
+          <h1 className="text-2xl font-bold text-slate-800 mb-1">{creator.displayName}</h1>
           <p className="text-sm text-slate-400 mb-1">@{creator.slug}</p>
           {creator.bio && <BioText text={creator.bio} />}
           {creator.bioLink && (
