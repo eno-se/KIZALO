@@ -60,13 +60,13 @@ function SortableIcon({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="flex flex-col items-center gap-1.5">
+    <div ref={setNodeRef} style={style} className="flex flex-col items-center gap-1.5 touch-none">
       <div
         className={`w-10 h-10 rounded-xl flex items-center justify-center touch-none cursor-grab active:cursor-grabbing ${link.isNew ? "ring-2 ring-pink-300" : "glass-btn-secondary"}`}
         {...attributes}
         {...listeners}
       >
-        <Image src={`/sns/${link.platform}.png`} alt={link.platform} width={28} height={28} className="object-contain" />
+        <Image src={`/sns/${link.platform}.png`} alt={link.platform} width={28} height={28} className="object-contain" draggable={false} />
       </div>
       <div className="flex gap-1">
         <button type="button" onClick={() => onMove(index, -1)} disabled={index === 0}
