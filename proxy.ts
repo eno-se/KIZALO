@@ -5,6 +5,14 @@ const SETUP_EXEMPT = ["/setup", "/login", "/me", "/api", "/admin"];
 const SUSPENDED_EXEMPT = ["/suspended", "/api", "/admin"];
 
 export default auth((req) => {
+  // www → 無印リダイレクト（永続301）
+  const host = req.headers.get("host") ?? "";
+  if (host.startsWith("www.")) {
+    const url = req.nextUrl.clone();
+    url.host = host.replace(/^www\./, "");
+    return NextResponse.redirect(url, { status: 301 });
+  }
+
   const session = req.auth;
   if (!session?.user) return NextResponse.next();
 
