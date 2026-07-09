@@ -8,7 +8,7 @@ import KizaruCardWrapper from "./KizaruCardWrapper";
 import TrackedLink from "./TrackedLink";
 import BioText from "@/app/components/BioText";
 import FanNameMarquee from "@/app/components/FanNameMarquee";
-import ShareButton from "./ShareButton";
+import MenuButton from "./MenuButton";
 import ReportButton from "./ReportButton";
 import Image from "next/image";
 import FeaturedImageCard from "./FeaturedImageCard";
@@ -145,18 +145,10 @@ export default async function CreatorPage({ params }: { params: Promise<{ slug: 
 
 
   return (
-    <div className="min-h-screen px-4 py-8 max-w-lg mx-auto pb-28">
+    <div className="min-h-screen px-4 pt-4 pb-28 max-w-lg mx-auto">
       {/* プロフィール */}
       <div className="px-2 mb-4">
-        {/* 右上ボタン */}
-        <div className="flex justify-end gap-2 mb-2">
-          <ShareButton slug={slug} />
-          {isOwner && (
-            <a href="/edit" className="text-xs glass-btn-secondary px-3 py-1.5 rounded-lg flex items-center">
-              編集
-            </a>
-          )}
-        </div>
+        <MenuButton slug={slug} isOwner={isOwner} />
 
         {/* トプ画・名前・ID（センター） */}
         <div className="flex flex-col items-center text-center mb-5">
@@ -184,12 +176,12 @@ export default async function CreatorPage({ params }: { params: Promise<{ slug: 
             className="rounded-full p-[3px] mb-3"
             style={{ background: "linear-gradient(135deg, #F58BCB 0%, #B98AF5 50%, #7DB7FF 100%)" }}
           >
-            <div className="rounded-full bg-white p-[3px]" style={{ width: 126, height: 126 }}>
-              <div className="rounded-full overflow-hidden" style={{ width: 120, height: 120 }}>
+            <div className="rounded-full bg-white p-[3px]" style={{ width: 106, height: 106 }}>
+              <div className="rounded-full overflow-hidden" style={{ width: 100, height: 100 }}>
                 {creator.iconUrl ? (
-                  <Image src={creator.iconUrl} alt={creator.displayName} width={120} height={120} className="object-cover" style={{ width: 120, height: 120 }} />
+                  <Image src={creator.iconUrl} alt={creator.displayName} width={100} height={100} className="object-cover" style={{ width: 100, height: 100 }} />
                 ) : (
-                  <div className="bg-pink-50 flex items-center justify-center text-3xl text-[#F58BCB] font-bold" style={{ width: 120, height: 120 }}>
+                  <div className="bg-pink-50 flex items-center justify-center text-3xl text-[#F58BCB] font-bold" style={{ width: 100, height: 100 }}>
                     {creator.displayName[0]}
                   </div>
                 )}
@@ -197,7 +189,7 @@ export default async function CreatorPage({ params }: { params: Promise<{ slug: 
             </div>
           </div>
 
-          <h1 className="text-2xl font-bold text-slate-800 mb-1">{creator.displayName}</h1>
+          <h1 className="text-lg font-bold text-slate-800 mb-1">{creator.displayName}</h1>
           <p className="text-sm text-slate-400 mb-1">@{creator.slug}</p>
           {creator.bio && <BioText text={creator.bio} />}
           {creator.bioLink && (
@@ -207,21 +199,15 @@ export default async function CreatorPage({ params }: { params: Promise<{ slug: 
               linkId="bio"
               label={creator.bioLinkLabel || "リンク"}
               platform="bio"
-              className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-full glass-btn-secondary text-xs font-semibold"
+              className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold text-white"
+              style={{ background: "linear-gradient(135deg, #B98AF5 0%, #7DB7FF 100%)" }}
             >
-              <span
-                style={{
-                  background: "linear-gradient(135deg, #F58BCB 0%, #B98AF5 50%, #7DB7FF 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                  fontSize: 14,
-                  lineHeight: 1,
-                }}
-              >
-                🔗
-              </span>
-              <span className="brand-gradient-text">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                <polyline points="15 3 21 3 21 9" />
+                <line x1="10" y1="14" x2="21" y2="3" />
+              </svg>
+              <span>
                 {creator.bioLinkLabel || creator.bioLink.replace(/^https?:\/\//, "")}
               </span>
             </TrackedLink>

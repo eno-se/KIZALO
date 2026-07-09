@@ -133,18 +133,18 @@ function BlockTypeIcon({ type, size = 20 }: { type: string; size?: number }) {
     case "ranking":
       return (
         <svg {...p}>
+          {/* 左取っ手（先に描いてカップで上書き） */}
+          <path d="M7 5C4.5 5 3 6 3 7.5C3 9 4.5 10 7 10L7 9C5.5 9 4.5 8.5 4.5 7.5C4.5 6.5 5.5 6 7 6Z" fill={g} />
+          {/* 右取っ手 */}
+          <path d="M17 5C19.5 5 21 6 21 7.5C21 9 19.5 10 17 10L17 9C18.5 9 19.5 8.5 19.5 7.5C19.5 6.5 18.5 6 17 6Z" fill={g} />
           {/* カップ本体 */}
-          <path d="M7 3h10l-1.5 9A4.5 4.5 0 0 1 7 12H7a4.5 4.5 0 0 1-4.5-4.5L2 3H7z" fill={g} />
-          {/* 取っ手（左右） */}
-          <path d="M2 3c-1 0-2 1-2 2.5S1 8 2 8" fill={g} />
-          <path d="M22 3c1 0 2 1 2 2.5S23 8 22 8" fill={g} />
-          {/* 台座 */}
-          <rect x="9.5" y="16" width="5" height="2" rx="1" fill={g} />
-          <rect x="7"   y="18" width="10" height="2.5" rx="1" fill={g} />
+          <path d="M7 2H17L15.5 11.5A4.5 4.5 0 0 1 8.5 11.5Z" fill={g} />
           {/* 柱 */}
-          <rect x="11" y="12" width="2" height="4.5" rx="1" fill={g} />
-          {/* 星（上） */}
-          <polygon points="12,4 12.7,6.2 15,6.2 13.2,7.5 13.9,9.7 12,8.4 10.1,9.7 10.8,7.5 9,6.2 11.3,6.2" fill="white" fillOpacity="0.9" />
+          <rect x="11" y="13" width="2" height="2" rx="0.5" fill={g} />
+          {/* 台座 */}
+          <rect x="8" y="15" width="8" height="2" rx="1" fill={g} />
+          {/* 星 */}
+          <polygon points="12,4 12.6,6.2 14.5,6.2 13,7.4 13.6,9.5 12,8.2 10.4,9.5 11,7.4 9.5,6.2 11.4,6.2" fill="white" fillOpacity="0.9" />
         </svg>
       );
     default:
@@ -232,18 +232,6 @@ function SortableBlockItem({
           </div>
         </button>
 
-        {/* 削除ボタン */}
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-full text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors disabled:opacity-40"
-          aria-label="削除"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
-
         {/* 展開/折り畳みシェブロン */}
         <button
           onClick={() => setOpen((v) => !v)}
@@ -265,6 +253,13 @@ function SortableBlockItem({
           <div className="pt-4">
             <ContentBlockForm block={block} rankingSettings={rankingSettings} onSaved={onSaved} />
           </div>
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="mt-4 w-full py-2 rounded-xl text-xs font-semibold text-red-400 border border-red-200 hover:bg-red-50 transition-colors disabled:opacity-40"
+          >
+            このブロックを削除
+          </button>
         </div>
       )}
     </div>
@@ -349,8 +344,11 @@ export default function ContentBlockManager({
 }) {
   const [blocks, setBlocks] = useState<Block[]>(initialBlocks);
   const [showPicker, setShowPicker] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [adding, startAddTransition] = useTransition();
   const [reordering, startReorderTransition] = useTransition();
+
+  const MAX_BLOCKS = 5;
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -394,6 +392,54 @@ export default function ContentBlockManager({
     <div className="space-y-2">
       {/* グラデーション定義（1回だけ、リスト側のアイコン用） */}
       <KizaloGradientDefs />
+
+      {/* カウンター + はてなボタン */}
+      <div className="flex items-center justify-between px-1">
+        <p className="text-xs font-semibold text-slate-500">
+          コンテンツ {blocks.length}/{MAX_BLOCKS}
+        </p>
+        <button
+          onClick={() => setShowHelp(true)}
+          className="w-5 h-5 rounded-full border border-slate-300 flex items-center justify-center text-slate-400 hover:border-slate-400 hover:text-slate-600 transition-colors flex-shrink-0"
+          aria-label="コンテンツ数について"
+        >
+          <span className="text-xs font-bold leading-none">?</span>
+        </button>
+      </div>
+
+      {/* はてなモーダル */}
+      {showHelp && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-6"
+          style={{ background: "rgba(0,0,0,0.3)" }}
+          onClick={() => setShowHelp(false)}
+        >
+          <div
+            className="rounded-2xl p-6 w-full max-w-sm"
+            style={{ background: "rgba(255,255,255,0.97)", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-full border-2 border-[#B98AF5] flex items-center justify-center flex-shrink-0">
+                <span className="text-xs font-bold brand-gradient-text leading-none">?</span>
+              </div>
+              <p className="text-sm font-bold text-slate-700">コンテンツ数について</p>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              現在はコンテンツを最大<span className="font-bold text-slate-800">5個</span>まで追加できます。
+            </p>
+            <p className="text-xs text-slate-500 leading-relaxed mt-2">
+              今後のアップデートで、最大<span className="font-bold text-slate-700">10個</span>まで追加できるようになる予定です。お楽しみに！
+            </p>
+            <button
+              onClick={() => setShowHelp(false)}
+              className="mt-4 w-full py-2 rounded-xl text-xs font-semibold glass-btn-secondary"
+            >
+              閉じる
+            </button>
+          </div>
+        </div>
+      )}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
           {blocks.map((block) => (
@@ -417,11 +463,11 @@ export default function ContentBlockManager({
       {/* 追加ボタン */}
       <button
         onClick={() => setShowPicker(true)}
-        disabled={blocks.length >= 5 || adding}
+        disabled={blocks.length >= MAX_BLOCKS || adding}
         className="glass-btn-secondary w-full py-3 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer"
       >
         <span className="text-lg leading-none">+</span>
-        {adding ? "追加中..." : blocks.length >= 5 ? "コンテンツは最大5個まで" : "コンテンツを追加する"}
+        {adding ? "追加中..." : blocks.length >= MAX_BLOCKS ? `コンテンツは最大${MAX_BLOCKS}個まで` : "コンテンツを追加する"}
       </button>
 
       {showPicker && (
