@@ -226,7 +226,7 @@ export default function KizarisClient({
 
       {/* Sticky block: profile + date nav + tabs */}
       <div
-        className="sticky top-14 z-30 -mx-4 px-4 pb-3 pt-2 flex flex-col gap-3"
+        className="sticky top-9 z-30 -mx-4 px-4 pb-3 pt-2 flex flex-col gap-3"
         style={{ background: "linear-gradient(180deg, rgba(253,244,251,0.97) 80%, transparent 100%)" }}
       >
         {/* Profile card */}

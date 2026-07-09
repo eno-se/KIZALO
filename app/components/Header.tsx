@@ -16,9 +16,9 @@ export default async function Header() {
   }
 
   return (
-    <header className="glass-header fixed top-0 left-0 right-0 z-50 px-4 py-2 flex items-center justify-center">
+    <header className="glass-header fixed top-0 left-0 right-0 z-50 px-4 py-1 flex items-center justify-center">
       <Link href={logoHref}>
-        <Image src="/logo.png" alt="KIZALO" height={36} width={120} className="object-contain" priority />
+        <Image src="/logo.png" alt="KIZALO" height={28} width={94} className="object-contain" priority />
       </Link>
     </header>
   );

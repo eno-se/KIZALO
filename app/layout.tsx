@@ -69,7 +69,7 @@ export default async function RootLayout({
         <NextTopLoader color="#B98AF5" shadow="0 0 10px #F58BCB,0 0 5px #7DB7FF" height={3} showSpinner={false} />
         <LiquidGlassFilter />
         <Header />
-        <div className="pt-14 pb-16">{children}</div>
+        <div className="pt-9 pb-16">{children}</div>
         <BottomNav mySlug={mySlug} />
       </body>
       <GoogleAnalytics gaId="G-CJDKRNS05W" />
