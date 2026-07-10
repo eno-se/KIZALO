@@ -9,8 +9,21 @@ export default function GuideTabs({ isLoggedIn }: { isLoggedIn: boolean }) {
 
   return (
     <div className="max-w-lg mx-auto px-4 pt-0 pb-28">
-      {/* タブ（固定） */}
-      <div className="sticky top-9 z-30 -mx-4 px-4 py-3 mb-3" style={{ background: "linear-gradient(to bottom, rgba(253,244,251,0.97) 80%, transparent 100%)" }}>
+      {/* タブ＋デモバナー（固定） */}
+      <div className="sticky top-9 z-30 -mx-4 px-4 pt-3 pb-3 mb-3" style={{ background: "linear-gradient(to bottom, rgba(253,244,251,0.97) 80%, transparent 100%)" }}>
+        <a
+          href="/demo/koharu_hoshino"
+          className="flex items-center justify-between gap-3 rounded-2xl px-4 py-3 mb-2"
+          style={{ background: "linear-gradient(135deg, #B98AF5 0%, #7DB7FF 100%)" }}
+        >
+          <div>
+            <p className="text-xs font-bold text-white">デモプロフィールを見る</p>
+            <p className="text-white/70 mt-0.5" style={{ fontSize: "0.65rem" }}>実際のプロフィールページがどう見えるか確認できます</p>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            <path d="M5 12h14M12 5l7 7-7 7" />
+          </svg>
+        </a>
         <div className="flex gap-2 max-w-lg mx-auto">
           {(["fan", "creator", "qna"] as Tab[]).map((t) => (
             <button
