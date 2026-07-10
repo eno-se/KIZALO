@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
-const SETUP_EXEMPT = ["/setup", "/login", "/me", "/api", "/admin", "/guide"];
+const SETUP_EXEMPT = ["/setup", "/login", "/me", "/api", "/admin", "/guide", "/demo"];
 const SUSPENDED_EXEMPT = ["/suspended", "/api", "/admin"];
 
 export default auth((req) => {

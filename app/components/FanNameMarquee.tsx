@@ -7,8 +7,14 @@ export default function FanNameMarquee({ name, className }: { name: string; clas
   const [overflow, setOverflow] = useState(false);
 
   useEffect(() => {
+    let active = true;
     const el = containerRef.current;
-    if (el) setOverflow(el.scrollWidth > el.clientWidth);
+    const check = () => {
+      if (active && el) setOverflow(el.scrollWidth > el.clientWidth);
+    };
+    check();
+    document.fonts.ready.then(check);
+    return () => { active = false; };
   }, [name]);
 
   return (
