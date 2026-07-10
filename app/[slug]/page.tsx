@@ -224,6 +224,26 @@ export default async function CreatorPage({ params }: { params: Promise<{ slug: 
         isOwner={isOwner}
         showKizaruButton={creator.showKizaruButton}
       >
+        {isOwner && (
+        <KizaruCardWrapper>
+        <div className="relative rounded-2xl pt-3 pb-4 px-4 overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(245,139,203,0.75) 0%, rgba(185,138,245,0.80) 50%, rgba(125,183,255,0.72) 100%)", border: "1px solid rgba(255,255,255,0.40)", boxShadow: "0 4px 24px rgba(185,138,245,0.35)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}>
+          <Image src="/logo.png" alt="KIZALO" width={56} height={17} className="absolute top-3 left-4 object-contain" style={{ filter: "brightness(0) invert(1)" }} />
+          <div
+            className="absolute font-bold text-white text-center"
+            style={{ width: 110, padding: "6px 0", fontSize: "0.55rem", letterSpacing: "0.04em", background: "rgba(255,255,255,0.35)", top: 18, right: -26, transform: "rotate(45deg)", boxShadow: "0 2px 5px rgba(0,0,0,0.18)", pointerEvents: "none" }}
+          >
+            プレビュー
+          </div>
+          <h2 className="text-xs font-bold text-white text-center mb-4 flex items-center justify-center gap-1.5">
+            <span className="sparkle" style={{ background: "white" }} />刻み実績<span className="sparkle" style={{ background: "white" }} />
+          </h2>
+          <div className="flex flex-col items-center justify-center py-6 gap-2">
+            <p className="text-white text-xs font-bold text-center">ここにファンの刻みカードが表示されます</p>
+            <p className="text-white/70 text-center mt-0.5" style={{ fontSize: "0.7rem" }}>ファンが刻ると自動で表示されます</p>
+          </div>
+        </div>
+        </KizaruCardWrapper>
+        )}
         {session && !isOwner && (
         <KizaruCardWrapper>
         <div className="relative rounded-2xl pt-3 pb-4 px-4 overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(245,139,203,0.75) 0%, rgba(185,138,245,0.80) 50%, rgba(125,183,255,0.72) 100%)", border: "1px solid rgba(255,255,255,0.40)", boxShadow: "0 4px 24px rgba(185,138,245,0.35)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}>
